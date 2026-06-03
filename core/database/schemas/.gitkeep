@@ -1,0 +1,7 @@
+android {
+    defaultConfig {
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+    }
+}

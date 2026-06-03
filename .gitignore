@@ -1,0 +1,9 @@
+# Project exclude
+/.gradle/
+/local.properties
+/captures/
+*.iml
+.idea/
+.DS_Store
+build/
+**/build/

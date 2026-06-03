@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FinTrack</string>
+    <string name="nav_dashboard">Inicio</string>
+    <string name="nav_transactions">Movimientos</string>
+    <string name="nav_categories">Categorías</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="empty_transactions">No hay movimientos todavía</string>
+    <string name="empty_categories">No hay categorías personalizadas</string>
+    <string name="empty_accounts">No hay cuentas</string>
+    <string name="empty_rules">No hay reglas de clasificación</string>
+    <string name="empty_learned">No hay aprendizajes registrados</string>
+    <string name="add_transaction">Nuevo movimiento</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete">Eliminar</string>
+    <string name="expense">Gasto</string>
+    <string name="income">Ingreso</string>
+    <string name="search_hint">Buscar movimientos…</string>
+    <string name="duplicate_warning">Posible duplicado detectado</string>
+</resources>
