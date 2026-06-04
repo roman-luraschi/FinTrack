@@ -19,7 +19,7 @@ import com.fintrack.app.feature.settings.presentation.ClassificationRulesScreen
 import com.fintrack.app.feature.settings.presentation.LearnedMappingsScreen
 import com.fintrack.app.feature.settings.presentation.SettingsScreen
 import com.fintrack.app.feature.transactions.presentation.TransactionFormScreen
-import com.fintrack.app.feature.transactions.presentation.TransactionListScreen
+import com.fintrack.app.feature.transactions.presentation.list.TransactionListScreen
 import com.fintrack.core.navigation.BottomNavItem
 import com.fintrack.core.navigation.MovementsGraphCallbacks
 import com.fintrack.core.navigation.Routes

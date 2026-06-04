@@ -26,4 +26,20 @@
     <string name="dashboard_no_top_category">Sin gastos por categoría</string>
     <string name="dashboard_recent_movements">Últimos movimientos</string>
     <string name="dashboard_loading">Cargando…</string>
+    <string name="filter_title">Filtros</string>
+    <string name="filter_all">Todas</string>
+    <string name="filter_type">Tipo</string>
+    <string name="filter_type_all">Todos</string>
+    <string name="filter_account">Cuenta</string>
+    <string name="filter_category">Categoría</string>
+    <string name="clear_filters">Limpiar filtros</string>
+    <string name="apply_filters">Aplicar</string>
+    <string name="empty_transactions_filtered">No hay movimientos con estos filtros</string>
+    <string name="delete_movement_title">Eliminar movimiento</string>
+    <string name="delete_movement_message">¿Confirmás que querés eliminar este movimiento?</string>
+    <string name="movement_deleted">Movimiento eliminado</string>
+    <string name="movement_delete_error">No se pudo eliminar el movimiento</string>
+    <string name="needs_review">Revisar categoría</string>
+    <string name="add_movement">Agregar movimiento</string>
+    <string name="filters_active">Filtros activos</string>
 </resources>
