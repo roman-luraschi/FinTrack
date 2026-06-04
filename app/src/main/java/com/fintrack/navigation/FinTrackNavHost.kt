@@ -10,32 +10,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.fintrack.app.feature.categories.presentation.CategoriesScreen
 import com.fintrack.app.feature.dashboard.presentation.DashboardScreen
 import com.fintrack.app.feature.settings.presentation.ClassificationRulesScreen
 import com.fintrack.app.feature.settings.presentation.LearnedMappingsScreen
 import com.fintrack.app.feature.settings.presentation.SettingsScreen
-import com.fintrack.app.feature.transactions.presentation.TransactionDetailScreen
 import com.fintrack.app.feature.transactions.presentation.TransactionFormScreen
 import com.fintrack.app.feature.transactions.presentation.TransactionListScreen
 import com.fintrack.core.navigation.BottomNavItem
+import com.fintrack.core.navigation.MovementsGraphCallbacks
 import com.fintrack.core.navigation.Routes
+import com.fintrack.core.navigation.SettingsGraphCallbacks
+import com.fintrack.core.navigation.finTrackRootGraph
+import com.fintrack.core.navigation.isBottomNavTabSelected
+import com.fintrack.core.navigation.navigateToCategories
+import com.fintrack.core.navigation.navigateToClassificationLearned
+import com.fintrack.core.navigation.navigateToClassificationRules
+import com.fintrack.core.navigation.navigateToCreateMovement
+import com.fintrack.core.navigation.navigateToEditMovement
+import com.fintrack.core.navigation.navigateToMovementsList
+import com.fintrack.core.navigation.navigateUp
+import com.fintrack.core.navigation.showsBottomBar
 
 @Composable
-fun FinTrackNavHost(
-    modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
-) {
+fun FinTrackNavHost(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val showBottomBar = currentRoute in BottomNavItem.entries.map { it.route }
+    val currentDestination = navBackStackEntry?.destination
+    val showBottomBar = currentDestination.showsBottomBar()
 
     Scaffold(
         modifier = modifier,
@@ -44,7 +49,7 @@ fun FinTrackNavHost(
                 NavigationBar {
                     BottomNavItem.entries.forEach { item ->
                         NavigationBarItem(
-                            selected = currentRoute?.startsWith(item.route) == true,
+                            selected = currentDestination.isBottomNavTabSelected(item.route),
                             onClick = {
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
@@ -67,90 +72,61 @@ fun FinTrackNavHost(
             startDestination = Routes.DASHBOARD,
             modifier = Modifier.padding(padding),
         ) {
-            composable(Routes.DASHBOARD) {
-                DashboardScreen(
-                    onCategoryClick = { categoryId ->
-                        navController.navigate(Routes.transactions(categoryId = categoryId))
+            finTrackRootGraph(
+                dashboard = {
+                    DashboardScreen(
+                        onCategoryClick = { categoryId ->
+                            navController.navigateToMovementsList(categoryId = categoryId)
+                        },
+                    )
+                },
+                movements = MovementsGraphCallbacks(
+                    list = { accountId, categoryId, callbacks ->
+                        TransactionListScreen(
+                            initialAccountId = accountId,
+                            initialCategoryId = categoryId,
+                            onAddClick = { callbacks.onAddClick(accountId) },
+                            onTransactionClick = callbacks.onTransactionClick,
+                        )
                     },
-                )
-            }
-            composable(
-                route = Routes.TRANSACTIONS,
-                arguments = listOf(
-                    navArgument("accountId") {
-                        type = NavType.LongType
-                        defaultValue = -1L
+                    add = { onBack, onSaved ->
+                        TransactionFormScreen(
+                            onBack = onBack,
+                            onSaved = onSaved,
+                        )
                     },
-                    navArgument("categoryId") {
-                        type = NavType.LongType
-                        defaultValue = -1L
-                    },
-                ),
-            ) { backStackEntry ->
-                val accountId = backStackEntry.arguments?.getLong("accountId")?.takeIf { it >= 0 }
-                val categoryId = backStackEntry.arguments?.getLong("categoryId")?.takeIf { it >= 0 }
-                TransactionListScreen(
-                    initialAccountId = accountId,
-                    initialCategoryId = categoryId,
-                    onAddClick = { navController.navigate(Routes.transactionAdd(accountId)) },
-                    onTransactionClick = { id -> navController.navigate(Routes.transactionDetail(id)) },
-                )
-            }
-            composable(Routes.TRANSACTIONS_BASE) {
-                TransactionListScreen(
-                    initialAccountId = null,
-                    initialCategoryId = null,
-                    onAddClick = { navController.navigate(Routes.transactionAdd()) },
-                    onTransactionClick = { id -> navController.navigate(Routes.transactionDetail(id)) },
-                )
-            }
-            composable(Routes.CATEGORIES) {
-                CategoriesScreen()
-            }
-            composable(Routes.SETTINGS) {
-                SettingsScreen(
-                    onNavigateToRules = { navController.navigate(Routes.CLASSIFICATION_RULES) },
-                    onNavigateToLearned = { navController.navigate(Routes.CLASSIFICATION_LEARNED) },
-                )
-            }
-            composable(
-                route = Routes.TRANSACTION_ADD,
-                arguments = listOf(
-                    navArgument("accountId") {
-                        type = NavType.LongType
-                        defaultValue = -1L
+                    edit = { onBack, onSaved ->
+                        TransactionFormScreen(
+                            onBack = onBack,
+                            onSaved = onSaved,
+                        )
                     },
                 ),
-            ) {
-                TransactionFormScreen(
-                    onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
-                )
-            }
-            composable(
-                route = Routes.TRANSACTION_DETAIL,
-                arguments = listOf(navArgument("id") { type = NavType.LongType }),
-            ) { backStackEntry ->
-                TransactionDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onEdit = { id -> navController.navigate(Routes.transactionEdit(id)) },
-                )
-            }
-            composable(
-                route = Routes.TRANSACTION_EDIT,
-                arguments = listOf(navArgument("id") { type = NavType.LongType }),
-            ) {
-                TransactionFormScreen(
-                    onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
-                )
-            }
-            composable(Routes.CLASSIFICATION_RULES) {
-                ClassificationRulesScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Routes.CLASSIFICATION_LEARNED) {
-                LearnedMappingsScreen(onBack = { navController.popBackStack() })
-            }
+                settings = SettingsGraphCallbacks(
+                    home = { onNavigateToCategories, onNavigateToRules, onNavigateToLearned ->
+                        SettingsScreen(
+                            onNavigateToCategories = onNavigateToCategories,
+                            onNavigateToRules = onNavigateToRules,
+                            onNavigateToLearned = onNavigateToLearned,
+                        )
+                    },
+                    categories = { onBack ->
+                        CategoriesScreen(onBack = onBack)
+                    },
+                    classificationRules = { onBack ->
+                        ClassificationRulesScreen(onBack = onBack)
+                    },
+                    learnedMappings = { onBack ->
+                        LearnedMappingsScreen(onBack = onBack)
+                    },
+                ),
+                navigateUp = { navController.navigateUp() },
+                navigateToCreateMovement = navController::navigateToCreateMovement,
+                navigateToEditMovement = navController::navigateToEditMovement,
+                navigateToCategories = navController::navigateToCategories,
+                navigateToClassificationRules = navController::navigateToClassificationRules,
+                navigateToClassificationLearned = navController::navigateToClassificationLearned,
+            )
         }
     }
 }

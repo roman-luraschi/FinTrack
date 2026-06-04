@@ -37,6 +37,7 @@ import com.fintrack.core.domain.model.AccountType
 
 @Composable
 fun SettingsScreen(
+    onNavigateToCategories: () -> Unit,
     onNavigateToRules: () -> Unit,
     onNavigateToLearned: () -> Unit,
     modifier: Modifier = Modifier,
@@ -88,6 +89,15 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.nav_categories),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNavigateToCategories)
+                        .padding(12.dp),
+                )
             }
             item {
                 Text(

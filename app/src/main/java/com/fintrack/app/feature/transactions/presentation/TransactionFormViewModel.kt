@@ -17,6 +17,7 @@ import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.Category
 import com.fintrack.core.domain.model.Transaction
 import com.fintrack.core.domain.model.TransactionType
+import com.fintrack.core.navigation.NavArgs
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,8 +59,9 @@ class TransactionFormViewModel @Inject constructor(
     private val getDefaultAccountUseCase: GetDefaultAccountUseCase,
 ) : ViewModel() {
 
-    private val transactionId: Long? = savedStateHandle.get<Long>("id")
-    private val preselectedAccountId: Long? = savedStateHandle.get<Long>("accountId")?.takeIf { it >= 0 }
+    private val transactionId: Long? = savedStateHandle.get<Long>(NavArgs.TRANSACTION_ID)
+    private val preselectedAccountId: Long? =
+        savedStateHandle.get<Long>(NavArgs.ACCOUNT_ID)?.takeIf { it != NavArgs.NONE }
 
     private val _uiState = MutableStateFlow(TransactionFormUiState(transactionId = transactionId))
     val uiState: StateFlow<TransactionFormUiState> = _uiState.asStateFlow()

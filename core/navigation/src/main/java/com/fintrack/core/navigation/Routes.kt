@@ -1,35 +1,52 @@
 package com.fintrack.core.navigation
 
 object Routes {
+    // Top-level (bottom navigation)
     const val DASHBOARD = "dashboard"
-    const val TRANSACTIONS = "transactions?accountId={accountId}&categoryId={categoryId}"
-    const val TRANSACTIONS_BASE = "transactions"
-    const val CATEGORIES = "categories"
-    const val SETTINGS = "settings"
-    const val TRANSACTION_ADD = "transaction/add?accountId={accountId}"
-    const val TRANSACTION_DETAIL = "transaction/{id}"
-    const val TRANSACTION_EDIT = "transaction/{id}/edit"
-    const val ACCOUNT_ADD = "account/add"
-    const val ACCOUNT_EDIT = "account/{id}/edit"
-    const val CLASSIFICATION_RULES = "classification/rules"
-    const val CLASSIFICATION_LEARNED = "classification/learned"
+    const val MOVEMENTS_GRAPH = "movements"
+    const val SETTINGS_GRAPH = "settings"
 
-    fun transactions(accountId: Long? = null, categoryId: Long? = null): String {
+    // Nested: movements (relative to [MOVEMENTS_GRAPH])
+    const val MOVEMENTS_LIST =
+        "list?${NavArgs.ACCOUNT_ID}={${NavArgs.ACCOUNT_ID}}&${NavArgs.CATEGORY_ID}={${NavArgs.CATEGORY_ID}}"
+    const val MOVEMENTS_LIST_BASE = "list"
+    const val MOVEMENT_CREATE = "create?${NavArgs.ACCOUNT_ID}={${NavArgs.ACCOUNT_ID}}"
+    const val MOVEMENT_EDIT = "edit/{${NavArgs.TRANSACTION_ID}}"
+
+    // Nested: settings (relative to [SETTINGS_GRAPH])
+    const val SETTINGS_HOME = "home"
+    const val SETTINGS_CATEGORIES = "categories"
+    const val SETTINGS_CLASSIFICATION_RULES = "classification/rules"
+    const val SETTINGS_CLASSIFICATION_LEARNED = "classification/learned"
+
+    // Future: account management, imports, movement detail
+    // const val ACCOUNT_ADD = "account/add"
+    // const val MOVEMENT_DETAIL = "detail/{transactionId}"
+
+    fun movementsList(accountId: Long? = null, categoryId: Long? = null): String {
         val params = buildList {
-            accountId?.let { add("accountId=$it") }
-            categoryId?.let { add("categoryId=$it") }
+            accountId?.let { add("${NavArgs.ACCOUNT_ID}=$it") }
+            categoryId?.let { add("${NavArgs.CATEGORY_ID}=$it") }
         }
-        return if (params.isEmpty()) {
-            TRANSACTIONS_BASE
+        val listSegment = if (params.isEmpty()) {
+            MOVEMENTS_LIST_BASE
         } else {
-            "${TRANSACTIONS_BASE}?${params.joinToString("&")}"
+            "$MOVEMENTS_LIST_BASE?${params.joinToString("&")}"
         }
+        return "$MOVEMENTS_GRAPH/$listSegment"
     }
 
-    fun transactionAdd(accountId: Long? = null): String =
-        "transaction/add?accountId=${accountId ?: -1L}"
+    fun movementCreate(accountId: Long? = null): String =
+        "$MOVEMENTS_GRAPH/create?${NavArgs.ACCOUNT_ID}=${accountId ?: NavArgs.NONE}"
 
-    fun transactionDetail(id: Long): String = "transaction/$id"
-    fun transactionEdit(id: Long): String = "transaction/$id/edit"
-    fun accountEdit(id: Long): String = "account/$id/edit"
+    fun movementEdit(transactionId: Long): String =
+        "$MOVEMENTS_GRAPH/edit/$transactionId"
+
+    fun settingsCategories(): String = "$SETTINGS_GRAPH/$SETTINGS_CATEGORIES"
+
+    fun settingsClassificationRules(): String =
+        "$SETTINGS_GRAPH/$SETTINGS_CLASSIFICATION_RULES"
+
+    fun settingsClassificationLearned(): String =
+        "$SETTINGS_GRAPH/$SETTINGS_CLASSIFICATION_LEARNED"
 }
