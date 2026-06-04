@@ -72,21 +72,26 @@ class SettingsViewModel @Inject constructor(
     private val _requestEnableAuth = kotlinx.coroutines.flow.MutableStateFlow(false)
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        observeAccountsUseCase(),
-        userPreferences.fuzzyThreshold,
-        userPreferences.dashboardPeriod,
-        biometricLockPort.observeLockEnabled(),
-        _biometricAvailability,
+        combine(
+            observeAccountsUseCase(),
+            userPreferences.fuzzyThreshold,
+            userPreferences.dashboardPeriod,
+            biometricLockPort.observeLockEnabled(),
+            _biometricAvailability,
+        ) { accounts, threshold, period, lockEnabled, availability ->
+            SettingsUiState(
+                accounts = accounts,
+                fuzzyThreshold = threshold,
+                dashboardPeriod = period,
+                biometricLockEnabled = lockEnabled,
+                biometricAvailability = availability,
+            )
+        },
         _requestEnableAuth,
         _message,
         _error,
-    ) { accounts, threshold, period, lockEnabled, availability, requestAuth, message, error ->
-        SettingsUiState(
-            accounts = accounts,
-            fuzzyThreshold = threshold,
-            dashboardPeriod = period,
-            biometricLockEnabled = lockEnabled,
-            biometricAvailability = availability,
+    ) { state, requestAuth, message, error ->
+        state.copy(
             requestEnableAuth = requestAuth,
             message = message,
             errorMessage = error,
