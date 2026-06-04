@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import com.fintrack.app.feature.security.presentation.AppLockGate
 import com.fintrack.core.designsystem.theme.FinTrackTheme
 import com.fintrack.navigation.FinTrackNavHost
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,7 +18,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FinTrackTheme {
-                FinTrackNavHost(modifier = Modifier.fillMaxSize())
+                AppLockGate(modifier = Modifier.fillMaxSize()) {
+                    FinTrackNavHost(modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }

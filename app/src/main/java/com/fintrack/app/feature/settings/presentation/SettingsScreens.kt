@@ -4,9 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -15,8 +17,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,8 +36,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fintrack.R
 import com.fintrack.core.designsystem.components.EmptyStateMessage
 import com.fintrack.core.designsystem.components.ErrorMessage
+import com.fintrack.app.feature.security.presentation.BiometricAuthEffect
+import com.fintrack.app.feature.security.presentation.toHelpMessageRes
 import com.fintrack.core.designsystem.components.FinTrackTopBar
 import com.fintrack.core.domain.model.AccountType
+import com.fintrack.core.domain.model.BiometricAvailability
 
 @Composable
 fun SettingsScreen(
@@ -45,6 +52,14 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var accountName by rememberSaveable { mutableStateOf("") }
+    val biometricSwitchEnabled = uiState.biometricAvailability == BiometricAvailability.Ready
+
+    BiometricAuthEffect(
+        requestAuth = uiState.requestEnableAuth,
+        subtitleResId = R.string.biometric_confirm_enable,
+        onResult = viewModel::onEnableAuthResult,
+        onRequestConsumed = viewModel::onEnableAuthRequestConsumed,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         FinTrackTopBar(title = stringResource(R.string.nav_settings))
@@ -52,6 +67,34 @@ fun SettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = stringResource(R.string.biometric_settings_title))
+                        Text(
+                            text = stringResource(R.string.biometric_settings_summary),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Switch(
+                        checked = uiState.biometricLockEnabled,
+                        onCheckedChange = viewModel::onBiometricLockToggle,
+                        enabled = biometricSwitchEnabled || uiState.biometricLockEnabled,
+                    )
+                }
+                uiState.biometricAvailability.toHelpMessageRes()?.let { helpRes ->
+                    Text(
+                        text = stringResource(helpRes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
             item {
                 Text("Umbral fuzzy: ${"%.2f".format(uiState.fuzzyThreshold)}")
                 Slider(

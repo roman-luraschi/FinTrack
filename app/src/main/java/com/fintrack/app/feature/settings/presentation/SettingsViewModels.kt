@@ -3,6 +3,9 @@ package com.fintrack.app.feature.settings.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.preferences.UserPreferences
+import com.fintrack.app.data.security.BiometricAuthResult
+import com.fintrack.core.domain.model.BiometricAvailability
+import com.fintrack.core.domain.repository.BiometricLockPort
 import com.fintrack.core.domain.usecase.account.AddAccountUseCase
 import com.fintrack.core.domain.usecase.account.DeleteAccountUseCase
 import com.fintrack.core.domain.usecase.account.ObserveAccountsUseCase
@@ -33,6 +36,9 @@ data class SettingsUiState(
     val accounts: List<Account> = emptyList(),
     val fuzzyThreshold: Float = UserPreferences.DEFAULT_FUZZY_THRESHOLD,
     val dashboardPeriod: DashboardPeriod = DashboardPeriod.MONTH,
+    val biometricLockEnabled: Boolean = false,
+    val biometricAvailability: BiometricAvailability = BiometricAvailability.Unavailable,
+    val requestEnableAuth: Boolean = false,
     val message: String? = null,
     val errorMessage: String? = null,
 )
@@ -56,26 +62,40 @@ class SettingsViewModel @Inject constructor(
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val setDefaultAccountUseCase: SetDefaultAccountUseCase,
     private val userPreferences: UserPreferences,
+    private val biometricLockPort: BiometricLockPort,
 ) : ViewModel() {
 
     private val _message = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
     private val _error = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    private val _biometricAvailability =
+        kotlinx.coroutines.flow.MutableStateFlow(biometricLockPort.checkAvailability())
+    private val _requestEnableAuth = kotlinx.coroutines.flow.MutableStateFlow(false)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         observeAccountsUseCase(),
         userPreferences.fuzzyThreshold,
         userPreferences.dashboardPeriod,
+        biometricLockPort.observeLockEnabled(),
+        _biometricAvailability,
+        _requestEnableAuth,
         _message,
         _error,
-    ) { accounts, threshold, period, message, error ->
+    ) { accounts, threshold, period, lockEnabled, availability, requestAuth, message, error ->
         SettingsUiState(
             accounts = accounts,
             fuzzyThreshold = threshold,
             dashboardPeriod = period,
+            biometricLockEnabled = lockEnabled,
+            biometricAvailability = availability,
+            requestEnableAuth = requestAuth,
             message = message,
             errorMessage = error,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    fun refreshBiometricAvailability() {
+        _biometricAvailability.value = biometricLockPort.checkAvailability()
+    }
 
     fun addAccount(name: String, type: AccountType) {
         viewModelScope.launch {
@@ -103,6 +123,36 @@ class SettingsViewModel @Inject constructor(
     fun setFuzzyThreshold(value: Float) {
         viewModelScope.launch {
             userPreferences.setFuzzyThreshold(value)
+        }
+    }
+
+    fun onBiometricLockToggle(enabled: Boolean) {
+        refreshBiometricAvailability()
+        if (!enabled) {
+            viewModelScope.launch {
+                biometricLockPort.setLockEnabled(false)
+            }
+            return
+        }
+        if (_biometricAvailability.value != BiometricAvailability.Ready) return
+        _requestEnableAuth.value = true
+    }
+
+    fun onEnableAuthRequestConsumed() {
+        _requestEnableAuth.value = false
+    }
+
+    fun onEnableAuthResult(result: BiometricAuthResult) {
+        viewModelScope.launch {
+            when (result) {
+                is BiometricAuthResult.Success -> {
+                    biometricLockPort.setLockEnabled(true)
+                    _message.value = null
+                }
+                is BiometricAuthResult.Error -> {
+                    biometricLockPort.setLockEnabled(false)
+                }
+            }
         }
     }
 }
