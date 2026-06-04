@@ -16,8 +16,11 @@ import com.fintrack.core.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ClassifyExpenseUseCase(
+@Singleton
+class ClassifyExpenseUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val categoryRepository: CategoryRepository,
     private val expenseClassifier: ExpenseClassifier,
@@ -52,13 +55,15 @@ class ClassifyExpenseUseCase(
     }
 }
 
-class ObserveClassificationRulesUseCase(
+@Singleton
+class ObserveClassificationRulesUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
 ) {
     operator fun invoke(): Flow<List<ClassificationRule>> = classificationRepository.observeRules()
 }
 
-class AddClassificationRuleUseCase(
+@Singleton
+class AddClassificationRuleUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
 ) {
     suspend operator fun invoke(
@@ -81,7 +86,8 @@ class AddClassificationRuleUseCase(
     }
 }
 
-class DeleteClassificationRuleUseCase(
+@Singleton
+class DeleteClassificationRuleUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
 ) {
     suspend operator fun invoke(id: Long): DomainResult<Unit> {
@@ -90,14 +96,16 @@ class DeleteClassificationRuleUseCase(
     }
 }
 
-class ObserveLearnedMappingsUseCase(
+@Singleton
+class ObserveLearnedMappingsUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
 ) {
     operator fun invoke(): Flow<List<LearnedMerchantCategory>> =
         classificationRepository.observeLearnedMappings()
 }
 
-class LearnFromCorrectionUseCase(
+@Singleton
+class LearnFromCorrectionUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
 ) {
     suspend operator fun invoke(
@@ -120,7 +128,8 @@ class LearnFromCorrectionUseCase(
     }
 }
 
-class RevertLearnedMappingUseCase(
+@Singleton
+class RevertLearnedMappingUseCase @Inject constructor(
     private val classificationRepository: ClassificationRepository,
 ) {
     suspend operator fun invoke(id: Long): DomainResult<Unit> {
@@ -129,7 +138,8 @@ class RevertLearnedMappingUseCase(
     }
 }
 
-class RecordCategoryCorrectionUseCase(
+@Singleton
+class RecordCategoryCorrectionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val learnFromCorrectionUseCase: LearnFromCorrectionUseCase,
 ) {

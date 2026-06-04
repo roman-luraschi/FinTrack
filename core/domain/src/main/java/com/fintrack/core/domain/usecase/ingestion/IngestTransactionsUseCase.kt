@@ -4,8 +4,11 @@ import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.IngestionRequest
 import com.fintrack.core.domain.model.IngestionResult
 import com.fintrack.core.domain.repository.TransactionIngestionPort
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class IngestTransactionsUseCase(
+@Singleton
+class IngestTransactionsUseCase @Inject constructor(
     private val ingestionPort: TransactionIngestionPort,
 ) {
     suspend operator fun invoke(request: IngestionRequest): DomainResult<IngestionResult> {

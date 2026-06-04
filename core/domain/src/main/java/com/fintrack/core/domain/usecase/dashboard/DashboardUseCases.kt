@@ -15,9 +15,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import java.math.BigDecimal
 import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ObserveDashboardSummaryUseCase(
+@Singleton
+class ObserveDashboardSummaryUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
     private val userSettingsPort: UserSettingsPort,
@@ -65,7 +68,8 @@ class ObserveDashboardSummaryUseCase(
         }
 }
 
-class GetDashboardSummaryUseCase(
+@Singleton
+class GetDashboardSummaryUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
 ) {
     suspend operator fun invoke(period: DashboardPeriod): DashboardSummary {

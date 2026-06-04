@@ -18,21 +18,26 @@ import kotlinx.coroutines.flow.first
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ObserveTransactionsUseCase(
+@Singleton
+class ObserveTransactionsUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
 ) {
     operator fun invoke(filter: TransactionFilter): Flow<List<Transaction>> =
         transactionRepository.observeTransactions(filter)
 }
 
-class ObserveTransactionUseCase(
+@Singleton
+class ObserveTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
 ) {
     operator fun invoke(id: Long): Flow<Transaction?> = transactionRepository.observeTransaction(id)
 }
 
-class AddTransactionUseCase(
+@Singleton
+class AddTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val classifyExpenseUseCase: ClassifyExpenseUseCase,
     private val userSettingsPort: UserSettingsPort,
@@ -104,7 +109,8 @@ data class AddTransactionResult(
     val duplicateCandidates: List<Transaction>,
 )
 
-class UpdateTransactionUseCase(
+@Singleton
+class UpdateTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
 ) {
     suspend operator fun invoke(
@@ -125,7 +131,8 @@ class UpdateTransactionUseCase(
     }
 }
 
-class DeleteTransactionUseCase(
+@Singleton
+class DeleteTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
 ) {
     suspend operator fun invoke(id: Long): DomainResult<Unit> {

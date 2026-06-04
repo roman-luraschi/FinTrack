@@ -31,21 +31,27 @@ object DatabaseModule {
             .build()
 
     @Provides
+    @Singleton
     fun provideAccountDao(db: FinTrackDatabase) = db.accountDao()
 
     @Provides
+    @Singleton
     fun provideCategoryDao(db: FinTrackDatabase) = db.categoryDao()
 
     @Provides
+    @Singleton
     fun provideTransactionDao(db: FinTrackDatabase) = db.transactionDao()
 
     @Provides
+    @Singleton
     fun provideClassificationDao(db: FinTrackDatabase) = db.classificationDao()
 
     @Provides
+    @Singleton
     fun provideIngestionBatchDao(db: FinTrackDatabase) = db.ingestionBatchDao()
 
     @Provides
+    @Singleton
     fun provideProvenanceDao(db: FinTrackDatabase) = db.provenanceDao()
 }
 

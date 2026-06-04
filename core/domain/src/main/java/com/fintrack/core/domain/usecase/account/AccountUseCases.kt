@@ -6,20 +6,25 @@ import com.fintrack.core.domain.model.AccountType
 import com.fintrack.core.domain.repository.AccountRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ObserveAccountsUseCase(
+@Singleton
+class ObserveAccountsUseCase @Inject constructor(
     private val accountRepository: AccountRepository,
 ) {
     operator fun invoke(): Flow<List<Account>> = accountRepository.observeAccounts()
 }
 
-class GetDefaultAccountUseCase(
+@Singleton
+class GetDefaultAccountUseCase @Inject constructor(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(): Account? = accountRepository.getDefaultAccount()
 }
 
-class AddAccountUseCase(
+@Singleton
+class AddAccountUseCase @Inject constructor(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(
@@ -44,7 +49,8 @@ class AddAccountUseCase(
     }
 }
 
-class UpdateAccountUseCase(
+@Singleton
+class UpdateAccountUseCase @Inject constructor(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(account: Account): DomainResult<Unit> {
@@ -54,7 +60,8 @@ class UpdateAccountUseCase(
     }
 }
 
-class DeleteAccountUseCase(
+@Singleton
+class DeleteAccountUseCase @Inject constructor(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(id: Long): DomainResult<Unit> {
@@ -63,7 +70,8 @@ class DeleteAccountUseCase(
     }
 }
 
-class SetDefaultAccountUseCase(
+@Singleton
+class SetDefaultAccountUseCase @Inject constructor(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(id: Long): DomainResult<Unit> {

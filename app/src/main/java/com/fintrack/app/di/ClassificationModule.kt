@@ -1,7 +1,5 @@
 package com.fintrack.app.di
 
-import com.fintrack.core.common.DefaultDispatcherProvider
-import com.fintrack.core.common.DispatcherProvider
 import com.fintrack.core.domain.classification.ExpenseClassifier
 import dagger.Module
 import dagger.Provides
@@ -11,11 +9,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object AppModule {
-    @Provides
-    @Singleton
-    fun provideDispatcherProvider(): DispatcherProvider = DefaultDispatcherProvider()
-
+object ClassificationModule {
     @Provides
     @Singleton
     fun provideExpenseClassifier(): ExpenseClassifier = ExpenseClassifier()

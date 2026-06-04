@@ -5,20 +5,25 @@ import com.fintrack.core.domain.model.Category
 import com.fintrack.core.domain.repository.CategoryRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ObserveCategoriesUseCase(
+@Singleton
+class ObserveCategoriesUseCase @Inject constructor(
     private val categoryRepository: CategoryRepository,
 ) {
     operator fun invoke(): Flow<List<Category>> = categoryRepository.observeCategories()
 }
 
-class ObserveRootCategoriesUseCase(
+@Singleton
+class ObserveRootCategoriesUseCase @Inject constructor(
     private val categoryRepository: CategoryRepository,
 ) {
     operator fun invoke(): Flow<List<Category>> = categoryRepository.observeRootCategories()
 }
 
-class AddCategoryUseCase(
+@Singleton
+class AddCategoryUseCase @Inject constructor(
     private val categoryRepository: CategoryRepository,
 ) {
     suspend operator fun invoke(name: String, parentId: Long? = null): DomainResult<Long> {
@@ -35,7 +40,8 @@ class AddCategoryUseCase(
     }
 }
 
-class DeleteCategoryUseCase(
+@Singleton
+class DeleteCategoryUseCase @Inject constructor(
     private val categoryRepository: CategoryRepository,
 ) {
     suspend operator fun invoke(categoryId: Long): DomainResult<Unit> {
