@@ -9,6 +9,8 @@ import androidx.room.Update
 import com.fintrack.core.database.entity.CategoryTotalEntity
 import com.fintrack.core.database.entity.TransactionChangeEntity
 import com.fintrack.core.database.entity.TransactionEntity
+import com.fintrack.core.database.entity.TransactionProvenanceEntity
+import com.fintrack.core.domain.model.TransactionSource
 import com.fintrack.core.domain.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -49,6 +51,20 @@ interface TransactionDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(transaction: TransactionEntity): Long
+
+    @Query(
+        """
+        SELECT * FROM transactions
+        WHERE deletedAt IS NULL
+        AND externalId = :externalId
+        AND source = :source
+        LIMIT 1
+        """,
+    )
+    suspend fun findByExternalIdAndSource(
+        externalId: String,
+        source: TransactionSource,
+    ): TransactionEntity?
 
     @Update
     suspend fun update(transaction: TransactionEntity)
@@ -112,6 +128,16 @@ interface TransactionDao {
         limit: Int = 10,
     ): List<CategoryTotalEntity>
 
+    @Query(
+        """
+        SELECT id FROM transactions
+        WHERE deletedAt IS NULL
+        AND ingestionBatchId = :batchId
+        AND status = 'DUPLICATE_CANDIDATE'
+        """,
+    )
+    suspend fun findDuplicateCandidateIdsByBatch(batchId: Long): List<Long>
+
     @Transaction
     suspend fun updateWithChanges(
         transaction: TransactionEntity,
@@ -121,5 +147,27 @@ interface TransactionDao {
         if (changes.isNotEmpty()) {
             insertChanges(changes)
         }
+    }
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProvenance(provenance: TransactionProvenanceEntity)
+
+    @Transaction
+    suspend fun insertWithProvenance(
+        transaction: TransactionEntity,
+        provenance: TransactionProvenanceEntity,
+    ): Long {
+        val id = insert(transaction)
+        insertProvenance(provenance.copy(transactionId = id))
+        return id
+    }
+
+    @Transaction
+    suspend fun updateWithProvenance(
+        transaction: TransactionEntity,
+        provenance: TransactionProvenanceEntity,
+    ) {
+        update(transaction)
+        insertProvenance(provenance.copy(transactionId = transaction.id))
     }
 }

@@ -1,12 +1,10 @@
-package com.fintrack.app.data.repository
+package com.fintrack.core.data.repository
 
 import com.fintrack.core.common.DispatcherProvider
-import com.fintrack.core.database.dao.ClassificationDao
 import com.fintrack.core.database.dao.TransactionDao
 import com.fintrack.core.database.mapper.toBigDecimalSafe
 import com.fintrack.core.database.mapper.toDomain
 import com.fintrack.core.database.mapper.toEntity
-import com.fintrack.core.domain.model.CategoryTotal
 import com.fintrack.core.domain.model.DashboardSummary
 import com.fintrack.core.domain.model.Transaction
 import com.fintrack.core.domain.model.TransactionChange

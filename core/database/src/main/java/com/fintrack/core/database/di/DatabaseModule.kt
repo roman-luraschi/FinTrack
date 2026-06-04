@@ -41,6 +41,12 @@ object DatabaseModule {
 
     @Provides
     fun provideClassificationDao(db: FinTrackDatabase) = db.classificationDao()
+
+    @Provides
+    fun provideIngestionBatchDao(db: FinTrackDatabase) = db.ingestionBatchDao()
+
+    @Provides
+    fun provideProvenanceDao(db: FinTrackDatabase) = db.provenanceDao()
 }
 
 private class SeedCallback : RoomDatabase.Callback() {

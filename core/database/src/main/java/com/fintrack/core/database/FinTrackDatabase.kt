@@ -7,6 +7,8 @@ import com.fintrack.core.database.converter.FinTrackTypeConverters
 import com.fintrack.core.database.dao.AccountDao
 import com.fintrack.core.database.dao.CategoryDao
 import com.fintrack.core.database.dao.ClassificationDao
+import com.fintrack.core.database.dao.IngestionBatchDao
+import com.fintrack.core.database.dao.ProvenanceDao
 import com.fintrack.core.database.dao.TransactionDao
 import com.fintrack.core.database.entity.AccountEntity
 import com.fintrack.core.database.entity.CategoryEntity
@@ -37,4 +39,6 @@ abstract class FinTrackDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun transactionDao(): TransactionDao
     abstract fun classificationDao(): ClassificationDao
+    abstract fun ingestionBatchDao(): IngestionBatchDao
+    abstract fun provenanceDao(): ProvenanceDao
 }

@@ -1,4 +1,4 @@
-package com.fintrack.app.data.repository
+package com.fintrack.core.data.repository
 
 import com.fintrack.core.common.DispatcherProvider
 import com.fintrack.core.database.dao.CategoryDao
