@@ -3,7 +3,7 @@ package com.fintrack.app.feature.dashboard.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.preferences.UserPreferences
-import com.fintrack.app.feature.dashboard.domain.ObserveDashboardSummaryUseCase
+import com.fintrack.core.domain.usecase.dashboard.ObserveDashboardSummaryUseCase
 import com.fintrack.core.common.MoneyFormatter
 import com.fintrack.core.domain.model.DashboardPeriod
 import com.fintrack.core.domain.model.DashboardSummary

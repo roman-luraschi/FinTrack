@@ -1,26 +1,25 @@
-package com.fintrack.app.feature.accounts.domain
+package com.fintrack.core.domain.usecase.account
 
-import com.fintrack.core.common.Result
+import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.AccountType
 import com.fintrack.core.domain.repository.AccountRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
-import javax.inject.Inject
 
-class ObserveAccountsUseCase @Inject constructor(
+class ObserveAccountsUseCase(
     private val accountRepository: AccountRepository,
 ) {
     operator fun invoke(): Flow<List<Account>> = accountRepository.observeAccounts()
 }
 
-class GetDefaultAccountUseCase @Inject constructor(
+class GetDefaultAccountUseCase(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(): Account? = accountRepository.getDefaultAccount()
 }
 
-class AddAccountUseCase @Inject constructor(
+class AddAccountUseCase(
     private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(
@@ -28,8 +27,8 @@ class AddAccountUseCase @Inject constructor(
         type: AccountType,
         colorHex: String? = null,
         isDefault: Boolean = false,
-    ): Result<Long> {
-        if (name.isBlank()) return Result.Error("El nombre es obligatorio")
+    ): DomainResult<Long> {
+        if (name.isBlank()) return DomainResult.Error("El nombre es obligatorio")
         val now = Instant.now()
         val id = accountRepository.insertAccount(
             Account(
@@ -41,34 +40,34 @@ class AddAccountUseCase @Inject constructor(
                 updatedAt = now,
             ),
         )
-        return Result.Success(id)
+        return DomainResult.Success(id)
     }
 }
 
-class UpdateAccountUseCase @Inject constructor(
+class UpdateAccountUseCase(
     private val accountRepository: AccountRepository,
 ) {
-    suspend operator fun invoke(account: Account): Result<Unit> {
-        if (account.name.isBlank()) return Result.Error("El nombre es obligatorio")
+    suspend operator fun invoke(account: Account): DomainResult<Unit> {
+        if (account.name.isBlank()) return DomainResult.Error("El nombre es obligatorio")
         accountRepository.updateAccount(account.copy(updatedAt = Instant.now()))
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }
 
-class DeleteAccountUseCase @Inject constructor(
+class DeleteAccountUseCase(
     private val accountRepository: AccountRepository,
 ) {
-    suspend operator fun invoke(id: Long): Result<Unit> {
+    suspend operator fun invoke(id: Long): DomainResult<Unit> {
         accountRepository.softDeleteAccount(id, Instant.now())
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }
 
-class SetDefaultAccountUseCase @Inject constructor(
+class SetDefaultAccountUseCase(
     private val accountRepository: AccountRepository,
 ) {
-    suspend operator fun invoke(id: Long): Result<Unit> {
+    suspend operator fun invoke(id: Long): DomainResult<Unit> {
         accountRepository.setDefaultAccount(id)
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }

@@ -1,6 +1,6 @@
 package com.fintrack.core.data.mapper
 
-import com.fintrack.core.common.Result
+import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.data.dto.BankNotificationDto
 import com.fintrack.core.data.dto.CsvTransactionRowDto
 import com.fintrack.core.data.dto.IngestionBatchDto
@@ -44,47 +44,47 @@ data class CsvColumnMapping(
 )
 
 fun IngestionBatchDto.toDrafts(
-    notificationParser: (BankNotificationDto) -> Result<ParsedNotificationFields>,
+    notificationParser: (BankNotificationDto) -> DomainResult<ParsedNotificationFields>,
     csvMapping: CsvColumnMapping = CsvColumnMapping(),
-): Result<List<TransactionDraft>> {
+): DomainResult<List<TransactionDraft>> {
     val drafts = mutableListOf<TransactionDraft>()
     for (item in items) {
         val result = when (item) {
             is IngestionItemDto.Manual -> item.dto.toDraft()
             is IngestionItemDto.BankNotification -> {
                 val accountId = targetAccountId
-                    ?: return Result.Error("targetAccountId requerido para notificaciones bancarias")
+                    ?: return DomainResult.Error("targetAccountId requerido para notificaciones bancarias")
                 item.dto.toDraft(accountId, notificationParser)
             }
             is IngestionItemDto.MercadoPago -> {
                 val accountId = targetAccountId
-                    ?: return Result.Error("targetAccountId requerido para Mercado Pago")
+                    ?: return DomainResult.Error("targetAccountId requerido para Mercado Pago")
                 item.dto.toDraft(accountId)
             }
             is IngestionItemDto.OcrReceipt -> {
                 val accountId = targetAccountId
-                    ?: return Result.Error("targetAccountId requerido para OCR")
+                    ?: return DomainResult.Error("targetAccountId requerido para OCR")
                 item.dto.toDraft(accountId)
             }
             is IngestionItemDto.CsvRow -> {
                 val accountId = targetAccountId
-                    ?: return Result.Error("targetAccountId requerido para CSV")
+                    ?: return DomainResult.Error("targetAccountId requerido para CSV")
                 item.dto.toDraft(accountId, csvMapping)
             }
         }
         when (result) {
-            is Result.Success -> drafts.add(result.data)
-            is Result.Error -> return result
+            is DomainResult.Success -> drafts.add(result.data)
+            is DomainResult.Error -> return result
         }
     }
-    return Result.Success(drafts)
+    return DomainResult.Success(drafts)
 }
 
 fun IngestionBatchDto.toIngestionRequest(
-    notificationParser: (BankNotificationDto) -> Result<ParsedNotificationFields>,
+    notificationParser: (BankNotificationDto) -> DomainResult<ParsedNotificationFields>,
     csvMapping: CsvColumnMapping = CsvColumnMapping(),
-): Result<IngestionRequest> = when (val result = toDrafts(notificationParser, csvMapping)) {
-    is Result.Success -> Result.Success(
+): DomainResult<IngestionRequest> = when (val result = toDrafts(notificationParser, csvMapping)) {
+    is DomainResult.Success -> DomainResult.Success(
         IngestionRequest(
             operationId = operationId,
             source = source,
@@ -94,22 +94,22 @@ fun IngestionBatchDto.toIngestionRequest(
             drafts = result.data,
         ),
     )
-    is Result.Error -> result
+    is DomainResult.Error -> result
 }
 
-fun ManualTransactionDto.toDraft(): Result<TransactionDraft> {
+fun ManualTransactionDto.toDraft(): DomainResult<TransactionDraft> {
     val parsedAmount = parseAmount(amount)
-        ?: return Result.Error("Monto inválido: $amount")
+        ?: return DomainResult.Error("Monto inválido: $amount")
     val parsedType = parseTransactionType(type)
-        ?: return Result.Error("Tipo de transacción inválido: $type")
+        ?: return DomainResult.Error("Tipo de transacción inválido: $type")
     val parsedDate = parseInstant(transactionDate)
-        ?: return Result.Error("Fecha inválida: $transactionDate")
-    if (description.isBlank()) return Result.Error("La descripción es obligatoria")
+        ?: return DomainResult.Error("Fecha inválida: $transactionDate")
+    if (description.isBlank()) return DomainResult.Error("La descripción es obligatoria")
 
     val capturedAt = Instant.now()
     val trimmedDescription = description.trim()
 
-    return Result.Success(
+    return DomainResult.Success(
         TransactionDraft(
             externalId = null,
             amount = parsedAmount,
@@ -135,14 +135,14 @@ fun ManualTransactionDto.toDraft(): Result<TransactionDraft> {
 
 fun BankNotificationDto.toDraft(
     accountId: Long,
-    parser: (BankNotificationDto) -> Result<ParsedNotificationFields>,
-): Result<TransactionDraft> {
+    parser: (BankNotificationDto) -> DomainResult<ParsedNotificationFields>,
+): DomainResult<TransactionDraft> {
     val parsed = when (val result = parser(this)) {
-        is Result.Success -> result.data
-        is Result.Error -> return result
+        is DomainResult.Success -> result.data
+        is DomainResult.Error -> return result
     }
     if (parsed.amount <= BigDecimal.ZERO) {
-        return Result.Error("Monto de notificación inválido")
+        return DomainResult.Error("Monto de notificación inválido")
     }
 
     val externalId = "$packageName:$notificationId"
@@ -152,7 +152,7 @@ fun BankNotificationDto.toDraft(
     val status = TransactionStatus.CONFIRMED
     val capturedAt = Instant.ofEpochMilli(postedAt)
 
-    return Result.Success(
+    return DomainResult.Success(
         TransactionDraft(
             externalId = externalId,
             amount = parsed.amount.setScale(2, RoundingMode.HALF_UP),
@@ -177,12 +177,12 @@ fun BankNotificationDto.toDraft(
     )
 }
 
-fun MercadoPagoTransactionDto.toDraft(accountId: Long): Result<TransactionDraft> {
+fun MercadoPagoTransactionDto.toDraft(accountId: Long): DomainResult<TransactionDraft> {
     val parsedAmount = parseAmount(transactionAmount)
-        ?: return Result.Error("Monto MP inválido: $transactionAmount")
+        ?: return DomainResult.Error("Monto MP inválido: $transactionAmount")
     val parsedDate = parseInstant(dateCreated)
-        ?: return Result.Error("Fecha MP inválida: $dateCreated")
-    if (description.isBlank()) return Result.Error("Descripción MP vacía")
+        ?: return DomainResult.Error("Fecha MP inválida: $dateCreated")
+    if (description.isBlank()) return DomainResult.Error("Descripción MP vacía")
 
     val type = mapMercadoPagoOperationType(operationType)
     val status = when (status.lowercase()) {
@@ -191,7 +191,7 @@ fun MercadoPagoTransactionDto.toDraft(accountId: Long): Result<TransactionDraft>
         else -> TransactionStatus.NEEDS_REVIEW
     }
 
-    return Result.Success(
+    return DomainResult.Success(
         TransactionDraft(
             externalId = id,
             amount = parsedAmount.setScale(2, RoundingMode.HALF_UP),
@@ -215,7 +215,7 @@ fun MercadoPagoTransactionDto.toDraft(accountId: Long): Result<TransactionDraft>
     )
 }
 
-fun OcrReceiptDto.toDraft(accountId: Long): Result<TransactionDraft> {
+fun OcrReceiptDto.toDraft(accountId: Long): DomainResult<TransactionDraft> {
     val capturedAt = Instant.now()
     val merchant = detectedMerchant?.trim().orEmpty()
     val description = merchant.ifBlank { "Ticket OCR" }
@@ -228,10 +228,10 @@ fun OcrReceiptDto.toDraft(accountId: Long): Result<TransactionDraft> {
     val transactionDate = parsedDate ?: capturedAt
 
     if (!isPartial && amount <= BigDecimal.ZERO) {
-        return Result.Error("Monto OCR inválido")
+        return DomainResult.Error("Monto OCR inválido")
     }
 
-    return Result.Success(
+    return DomainResult.Success(
         TransactionDraft(
             externalId = sessionId,
             amount = amount,
@@ -258,20 +258,20 @@ fun OcrReceiptDto.toDraft(accountId: Long): Result<TransactionDraft> {
 fun CsvTransactionRowDto.toDraft(
     accountId: Long,
     mapping: CsvColumnMapping,
-): Result<TransactionDraft> {
+): DomainResult<TransactionDraft> {
     val dateRaw = columns[mapping.dateColumn]
-        ?: return Result.Error("Fila ${rowNumber}: columna de fecha '${mapping.dateColumn}' ausente")
+        ?: return DomainResult.Error("Fila ${rowNumber}: columna de fecha '${mapping.dateColumn}' ausente")
     val amountRaw = columns[mapping.amountColumn]
-        ?: return Result.Error("Fila ${rowNumber}: columna de monto '${mapping.amountColumn}' ausente")
+        ?: return DomainResult.Error("Fila ${rowNumber}: columna de monto '${mapping.amountColumn}' ausente")
     val descriptionRaw = columns[mapping.descriptionColumn]
-        ?: return Result.Error("Fila ${rowNumber}: columna de descripción '${mapping.descriptionColumn}' ausente")
+        ?: return DomainResult.Error("Fila ${rowNumber}: columna de descripción '${mapping.descriptionColumn}' ausente")
 
     val parsedAmount = parseAmount(amountRaw)
-        ?: return Result.Error("Fila ${rowNumber}: monto inválido '$amountRaw'")
+        ?: return DomainResult.Error("Fila ${rowNumber}: monto inválido '$amountRaw'")
     val parsedDate = parseInstant(dateRaw) ?: parseLocalDate(dateRaw)
-        ?: return Result.Error("Fila ${rowNumber}: fecha inválida '$dateRaw'")
+        ?: return DomainResult.Error("Fila ${rowNumber}: fecha inválida '$dateRaw'")
     if (parsedAmount <= BigDecimal.ZERO) {
-        return Result.Error("Fila ${rowNumber}: monto debe ser mayor a cero")
+        return DomainResult.Error("Fila ${rowNumber}: monto debe ser mayor a cero")
     }
 
     val type = mapping.typeColumn?.let { columns[it] }?.let { parseTransactionType(it) }
@@ -283,7 +283,7 @@ fun CsvTransactionRowDto.toDraft(
 
     val currency = mapping.currencyColumn?.let { columns[it] }?.uppercase() ?: "ARS"
 
-    return Result.Success(
+    return DomainResult.Success(
         TransactionDraft(
             externalId = externalId,
             amount = parsedAmount.abs().setScale(2, RoundingMode.HALF_UP),

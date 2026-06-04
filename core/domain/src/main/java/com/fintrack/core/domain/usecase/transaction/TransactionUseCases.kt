@@ -1,41 +1,41 @@
-package com.fintrack.app.feature.transactions.domain
+package com.fintrack.core.domain.usecase.transaction
 
-import com.fintrack.core.common.Result
 import com.fintrack.core.domain.classification.MerchantNormalizer
-import com.fintrack.core.domain.model.ChangeReason
+import com.fintrack.core.domain.common.DomainResult
+import com.fintrack.core.domain.model.ClassificationSource
 import com.fintrack.core.domain.model.Transaction
-import com.fintrack.core.domain.model.TransactionChange
 import com.fintrack.core.domain.model.TransactionFilter
 import com.fintrack.core.domain.model.TransactionSource
 import com.fintrack.core.domain.model.TransactionStatus
 import com.fintrack.core.domain.model.TransactionType
 import com.fintrack.core.domain.repository.TransactionRepository
-import com.fintrack.app.feature.classification.domain.ClassifyExpenseUseCase
-import com.fintrack.app.data.preferences.UserPreferences
+import com.fintrack.core.domain.repository.UserSettingsPort
+import com.fintrack.core.domain.transaction.TransactionChangeRecorder
+import com.fintrack.core.domain.transaction.TransactionValidator
+import com.fintrack.core.domain.usecase.classification.ClassifyExpenseUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
-import javax.inject.Inject
 
-class ObserveTransactionsUseCase @Inject constructor(
+class ObserveTransactionsUseCase(
     private val transactionRepository: TransactionRepository,
 ) {
     operator fun invoke(filter: TransactionFilter): Flow<List<Transaction>> =
         transactionRepository.observeTransactions(filter)
 }
 
-class ObserveTransactionUseCase @Inject constructor(
+class ObserveTransactionUseCase(
     private val transactionRepository: TransactionRepository,
 ) {
     operator fun invoke(id: Long): Flow<Transaction?> = transactionRepository.observeTransaction(id)
 }
 
-class AddTransactionUseCase @Inject constructor(
+class AddTransactionUseCase(
     private val transactionRepository: TransactionRepository,
     private val classifyExpenseUseCase: ClassifyExpenseUseCase,
-    private val userPreferences: UserPreferences,
+    private val userSettingsPort: UserSettingsPort,
 ) {
     suspend operator fun invoke(
         amount: BigDecimal,
@@ -45,14 +45,15 @@ class AddTransactionUseCase @Inject constructor(
         transactionDate: Instant,
         notes: String? = null,
         categoryId: Long? = null,
-    ): Result<AddTransactionResult> {
-        if (description.isBlank()) return Result.Error("La descripción es obligatoria")
-        if (amount <= BigDecimal.ZERO) return Result.Error("El monto debe ser mayor a cero")
+    ): DomainResult<AddTransactionResult> {
+        TransactionValidator.validateManualEntry(description, amount).let { validation ->
+            if (validation is DomainResult.Error) return validation
+        }
 
         val normalizedAmount = amount.setScale(2, RoundingMode.HALF_UP)
         val merchantNormalized = MerchantNormalizer.normalize(description)
         val now = Instant.now()
-        val fuzzyThreshold = userPreferences.fuzzyThreshold.first()
+        val fuzzyThreshold = userSettingsPort.observeFuzzyThreshold().first()
 
         val classification = if (type == TransactionType.EXPENSE && categoryId == null) {
             classifyExpenseUseCase(description, fuzzyThreshold)
@@ -77,8 +78,7 @@ class AddTransactionUseCase @Inject constructor(
             merchantNormalized = merchantNormalized,
             categoryId = resolvedCategoryId,
             subcategoryId = classification?.subcategoryId,
-            classificationSource = classification?.source
-                ?: com.fintrack.core.domain.model.ClassificationSource.USER_OVERRIDE,
+            classificationSource = classification?.source ?: ClassificationSource.USER_OVERRIDE,
             classificationConfidence = classification?.confidence,
             needsReview = classification?.needsReview ?: false,
             source = TransactionSource.MANUAL,
@@ -90,7 +90,7 @@ class AddTransactionUseCase @Inject constructor(
         )
 
         val id = transactionRepository.insertTransaction(transaction)
-        return Result.Success(
+        return DomainResult.Success(
             AddTransactionResult(
                 transactionId = id,
                 duplicateCandidates = duplicates,
@@ -104,31 +104,15 @@ data class AddTransactionResult(
     val duplicateCandidates: List<Transaction>,
 )
 
-class UpdateTransactionUseCase @Inject constructor(
+class UpdateTransactionUseCase(
     private val transactionRepository: TransactionRepository,
 ) {
     suspend operator fun invoke(
         transaction: Transaction,
         previous: Transaction,
-    ): Result<Unit> {
+    ): DomainResult<Unit> {
         val now = Instant.now()
-        val changes = buildList {
-            if (previous.amount != transaction.amount) {
-                add(fieldChange(transaction.id, "amount", previous.amount.toPlainString(), transaction.amount.toPlainString(), now))
-            }
-            if (previous.description != transaction.description) {
-                add(fieldChange(transaction.id, "description", previous.description, transaction.description, now))
-            }
-            if (previous.categoryId != transaction.categoryId) {
-                add(fieldChange(transaction.id, "categoryId", previous.categoryId?.toString(), transaction.categoryId?.toString(), now))
-            }
-            if (previous.accountId != transaction.accountId) {
-                add(fieldChange(transaction.id, "accountId", previous.accountId.toString(), transaction.accountId.toString(), now))
-            }
-            if (previous.transactionDate != transaction.transactionDate) {
-                add(fieldChange(transaction.id, "transactionDate", previous.transactionDate.toString(), transaction.transactionDate.toString(), now))
-            }
-        }
+        val changes = TransactionChangeRecorder.recordUserEdit(previous, transaction, now)
 
         transactionRepository.updateTransaction(
             transaction.copy(
@@ -137,30 +121,15 @@ class UpdateTransactionUseCase @Inject constructor(
             ),
             changes,
         )
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
-
-    private fun fieldChange(
-        transactionId: Long,
-        field: String,
-        old: String?,
-        new: String?,
-        now: Instant,
-    ) = TransactionChange(
-        transactionId = transactionId,
-        fieldName = field,
-        oldValue = old,
-        newValue = new,
-        changedAt = now,
-        changeReason = ChangeReason.USER_EDIT,
-    )
 }
 
-class DeleteTransactionUseCase @Inject constructor(
+class DeleteTransactionUseCase(
     private val transactionRepository: TransactionRepository,
 ) {
-    suspend operator fun invoke(id: Long): Result<Unit> {
+    suspend operator fun invoke(id: Long): DomainResult<Unit> {
         transactionRepository.softDeleteTransaction(id, Instant.now())
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }

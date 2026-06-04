@@ -3,17 +3,17 @@ package com.fintrack.app.feature.settings.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.preferences.UserPreferences
-import com.fintrack.app.feature.accounts.domain.AddAccountUseCase
-import com.fintrack.app.feature.accounts.domain.DeleteAccountUseCase
-import com.fintrack.app.feature.accounts.domain.ObserveAccountsUseCase
-import com.fintrack.app.feature.accounts.domain.SetDefaultAccountUseCase
-import com.fintrack.app.feature.classification.domain.AddClassificationRuleUseCase
-import com.fintrack.app.feature.classification.domain.DeleteClassificationRuleUseCase
-import com.fintrack.app.feature.classification.domain.ObserveClassificationRulesUseCase
-import com.fintrack.app.feature.classification.domain.ObserveLearnedMappingsUseCase
-import com.fintrack.app.feature.classification.domain.RevertLearnedMappingUseCase
-import com.fintrack.app.feature.categories.domain.ObserveRootCategoriesUseCase
-import com.fintrack.core.common.Result
+import com.fintrack.core.domain.usecase.account.AddAccountUseCase
+import com.fintrack.core.domain.usecase.account.DeleteAccountUseCase
+import com.fintrack.core.domain.usecase.account.ObserveAccountsUseCase
+import com.fintrack.core.domain.usecase.account.SetDefaultAccountUseCase
+import com.fintrack.core.domain.usecase.classification.AddClassificationRuleUseCase
+import com.fintrack.core.domain.usecase.classification.DeleteClassificationRuleUseCase
+import com.fintrack.core.domain.usecase.classification.ObserveClassificationRulesUseCase
+import com.fintrack.core.domain.usecase.classification.ObserveLearnedMappingsUseCase
+import com.fintrack.core.domain.usecase.classification.RevertLearnedMappingUseCase
+import com.fintrack.core.domain.usecase.category.ObserveRootCategoriesUseCase
+import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.AccountType
 import com.fintrack.core.domain.model.Category
@@ -80,8 +80,8 @@ class SettingsViewModel @Inject constructor(
     fun addAccount(name: String, type: AccountType) {
         viewModelScope.launch {
             when (val result = addAccountUseCase(name, type)) {
-                is Result.Success -> _message.value = "Cuenta creada"
-                is Result.Error -> _error.value = result.message
+                is DomainResult.Success -> _message.value = "Cuenta creada"
+                is DomainResult.Error -> _error.value = result.message
             }
         }
     }

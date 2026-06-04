@@ -3,16 +3,16 @@ package com.fintrack.app.feature.transactions.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fintrack.app.feature.accounts.domain.GetDefaultAccountUseCase
-import com.fintrack.app.feature.accounts.domain.ObserveAccountsUseCase
-import com.fintrack.app.feature.categories.domain.ObserveRootCategoriesUseCase
-import com.fintrack.app.feature.transactions.domain.AddTransactionUseCase
-import com.fintrack.app.feature.transactions.domain.DeleteTransactionUseCase
-import com.fintrack.app.feature.transactions.domain.ObserveTransactionUseCase
-import com.fintrack.app.feature.transactions.domain.UpdateTransactionUseCase
+import com.fintrack.core.domain.usecase.account.GetDefaultAccountUseCase
+import com.fintrack.core.domain.usecase.account.ObserveAccountsUseCase
+import com.fintrack.core.domain.usecase.category.ObserveRootCategoriesUseCase
+import com.fintrack.core.domain.usecase.transaction.AddTransactionUseCase
+import com.fintrack.core.domain.usecase.transaction.DeleteTransactionUseCase
+import com.fintrack.core.domain.usecase.transaction.ObserveTransactionUseCase
+import com.fintrack.core.domain.usecase.transaction.UpdateTransactionUseCase
 import com.fintrack.core.common.DateUtils
 import com.fintrack.core.common.MoneyFormatter
-import com.fintrack.core.common.Result
+import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.Category
 import com.fintrack.core.domain.model.Transaction
@@ -173,7 +173,7 @@ class TransactionFormViewModel @Inject constructor(
                         categoryId = state.selectedCategoryId,
                     )
                 ) {
-                    is Result.Success -> {
+                    is DomainResult.Success -> {
                         val warning = if (result.data.duplicateCandidates.isNotEmpty()) {
                             "Posible duplicado: ${result.data.duplicateCandidates.size} movimiento(s) similar(es)"
                         } else {
@@ -183,7 +183,7 @@ class TransactionFormViewModel @Inject constructor(
                             it.copy(isSaving = false, savedSuccessfully = true, duplicateWarning = warning)
                         }
                     }
-                    is Result.Error -> _uiState.update {
+                    is DomainResult.Error -> _uiState.update {
                         it.copy(isSaving = false, errorMessage = result.message)
                     }
                 }
@@ -199,10 +199,10 @@ class TransactionFormViewModel @Inject constructor(
                     notes = state.notes.takeIf { it.isNotBlank() },
                 )
                 when (val result = updateTransactionUseCase(updated, previous)) {
-                    is Result.Success -> _uiState.update {
+                    is DomainResult.Success -> _uiState.update {
                         it.copy(isSaving = false, savedSuccessfully = true)
                     }
-                    is Result.Error -> _uiState.update {
+                    is DomainResult.Error -> _uiState.update {
                         it.copy(isSaving = false, errorMessage = result.message)
                     }
                 }

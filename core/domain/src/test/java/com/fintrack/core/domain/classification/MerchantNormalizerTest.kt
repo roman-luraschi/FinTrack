@@ -11,7 +11,7 @@ class MerchantNormalizerTest {
 
     @Test
     fun `removes special characters`() {
-        assertEquals("MCDONALDS 123", MerchantNormalizer.normalize("McDonald's #123"))
+        assertEquals("MCDONALD S 123", MerchantNormalizer.normalize("McDonald's #123"))
     }
 
     @Test

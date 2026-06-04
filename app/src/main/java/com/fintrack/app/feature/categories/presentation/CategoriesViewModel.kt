@@ -2,10 +2,10 @@ package com.fintrack.app.feature.categories.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fintrack.app.feature.categories.domain.AddCategoryUseCase
-import com.fintrack.app.feature.categories.domain.DeleteCategoryUseCase
-import com.fintrack.app.feature.categories.domain.ObserveCategoriesUseCase
-import com.fintrack.core.common.Result
+import com.fintrack.core.domain.usecase.category.AddCategoryUseCase
+import com.fintrack.core.domain.usecase.category.DeleteCategoryUseCase
+import com.fintrack.core.domain.usecase.category.ObserveCategoriesUseCase
+import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,8 +48,8 @@ class CategoriesViewModel @Inject constructor(
     fun addCategory(name: String) {
         viewModelScope.launch {
             when (val result = addCategoryUseCase(name)) {
-                is Result.Success -> _messages.value = null to "Categoría creada"
-                is Result.Error -> _messages.value = result.message to null
+                is DomainResult.Success -> _messages.value = null to "Categoría creada"
+                is DomainResult.Error -> _messages.value = result.message to null
             }
         }
     }
@@ -57,8 +57,8 @@ class CategoriesViewModel @Inject constructor(
     fun deleteCategory(id: Long) {
         viewModelScope.launch {
             when (val result = deleteCategoryUseCase(id)) {
-                is Result.Success -> _messages.value = null to "Categoría eliminada"
-                is Result.Error -> _messages.value = result.message to null
+                is DomainResult.Success -> _messages.value = null to "Categoría eliminada"
+                is DomainResult.Error -> _messages.value = result.message to null
             }
         }
     }

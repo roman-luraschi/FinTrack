@@ -3,9 +3,9 @@ package com.fintrack.app.feature.transactions.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fintrack.app.feature.accounts.domain.ObserveAccountsUseCase
-import com.fintrack.app.feature.categories.domain.ObserveRootCategoriesUseCase
-import com.fintrack.app.feature.transactions.domain.ObserveTransactionsUseCase
+import com.fintrack.core.domain.usecase.account.ObserveAccountsUseCase
+import com.fintrack.core.domain.usecase.category.ObserveRootCategoriesUseCase
+import com.fintrack.core.domain.usecase.transaction.ObserveTransactionsUseCase
 import com.fintrack.core.common.MoneyFormatter
 import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.Category

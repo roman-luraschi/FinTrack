@@ -1,6 +1,5 @@
-package com.fintrack.app.feature.dashboard.domain
+package com.fintrack.core.domain.usecase.dashboard
 
-import com.fintrack.core.common.DateUtils
 import com.fintrack.core.domain.model.CategoryTotal
 import com.fintrack.core.domain.model.DashboardPeriod
 import com.fintrack.core.domain.model.DashboardSummary
@@ -8,23 +7,25 @@ import com.fintrack.core.domain.model.TransactionFilter
 import com.fintrack.core.domain.model.TransactionType
 import com.fintrack.core.domain.repository.CategoryRepository
 import com.fintrack.core.domain.repository.TransactionRepository
-import com.fintrack.app.data.preferences.UserPreferences
+import com.fintrack.core.domain.repository.UserSettingsPort
+import com.fintrack.core.domain.util.PeriodRangeResolver
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import java.math.BigDecimal
 import java.time.Instant
-import javax.inject.Inject
 
-class ObserveDashboardSummaryUseCase @Inject constructor(
+@OptIn(ExperimentalCoroutinesApi::class)
+class ObserveDashboardSummaryUseCase(
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
-    private val userPreferences: UserPreferences,
+    private val userSettingsPort: UserSettingsPort,
 ) {
     operator fun invoke(): Flow<DashboardSummary> =
-        userPreferences.dashboardPeriod.flatMapLatest { period ->
+        userSettingsPort.observeDashboardPeriod().flatMapLatest { period ->
             val now = Instant.now()
-            val (start, end) = period.toRange(now)
+            val (start, end) = PeriodRangeResolver.resolve(period, now)
             combine(
                 transactionRepository.observeTransactions(
                     TransactionFilter(startDate = start, endDate = end),
@@ -64,17 +65,12 @@ class ObserveDashboardSummaryUseCase @Inject constructor(
         }
 }
 
-class GetDashboardSummaryUseCase @Inject constructor(
+class GetDashboardSummaryUseCase(
     private val transactionRepository: TransactionRepository,
 ) {
     suspend operator fun invoke(period: DashboardPeriod): DashboardSummary {
         val now = Instant.now()
-        val (start, end) = period.toRange(now)
+        val (start, end) = PeriodRangeResolver.resolve(period, now)
         return transactionRepository.getDashboardSummary(start, end)
     }
-}
-
-private fun DashboardPeriod.toRange(now: Instant): Pair<Instant, Instant> = when (this) {
-    DashboardPeriod.WEEK -> DateUtils.startOfWeek(now) to DateUtils.endOfWeek(now)
-    DashboardPeriod.MONTH -> DateUtils.startOfMonth(now) to DateUtils.endOfMonth(now)
 }

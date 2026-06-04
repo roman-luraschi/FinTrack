@@ -1,8 +1,8 @@
-package com.fintrack.app.feature.classification.domain
+package com.fintrack.core.domain.usecase.classification
 
-import com.fintrack.core.common.Result
 import com.fintrack.core.domain.classification.ExpenseClassifier
 import com.fintrack.core.domain.classification.MerchantNormalizer
+import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.ChangeReason
 import com.fintrack.core.domain.model.ClassificationResult
 import com.fintrack.core.domain.model.ClassificationRule
@@ -16,9 +16,8 @@ import com.fintrack.core.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.Instant
-import javax.inject.Inject
 
-class ClassifyExpenseUseCase @Inject constructor(
+class ClassifyExpenseUseCase(
     private val classificationRepository: ClassificationRepository,
     private val categoryRepository: CategoryRepository,
     private val expenseClassifier: ExpenseClassifier,
@@ -29,30 +28,37 @@ class ClassifyExpenseUseCase @Inject constructor(
     ): ClassificationResult {
         val rules = classificationRepository.getActiveRules()
         val learned = classificationRepository.getLearnedMappings()
-        val defaultCategory = categoryRepository.getCategory(DEFAULT_CATEGORY_ID)
-            ?: categoryRepository.observeRootCategories().first().lastOrNull()
+        val defaultCategoryId = resolveDefaultCategoryId()
 
         return expenseClassifier.classify(
             description = description,
             rules = rules,
             learnedMappings = learned,
-            defaultCategoryId = defaultCategory?.id,
+            defaultCategoryId = defaultCategoryId,
             fuzzyThreshold = fuzzyThreshold,
         )
     }
 
+    private suspend fun resolveDefaultCategoryId(): Long? {
+        val roots = categoryRepository.observeRootCategories().first()
+            .filter { it.deletedAt == null }
+        return roots.find { it.name.equals(DEFAULT_CATEGORY_NAME, ignoreCase = true) }?.id
+            ?: roots.filter { !it.isSystem }.maxByOrNull { it.sortOrder }?.id
+            ?: roots.lastOrNull()?.id
+    }
+
     companion object {
-        const val DEFAULT_CATEGORY_ID = 14L
+        private const val DEFAULT_CATEGORY_NAME = "Otros"
     }
 }
 
-class ObserveClassificationRulesUseCase @Inject constructor(
+class ObserveClassificationRulesUseCase(
     private val classificationRepository: ClassificationRepository,
 ) {
     operator fun invoke(): Flow<List<ClassificationRule>> = classificationRepository.observeRules()
 }
 
-class AddClassificationRuleUseCase @Inject constructor(
+class AddClassificationRuleUseCase(
     private val classificationRepository: ClassificationRepository,
 ) {
     suspend operator fun invoke(
@@ -60,8 +66,8 @@ class AddClassificationRuleUseCase @Inject constructor(
         matchType: MatchType,
         categoryId: Long,
         priority: Int = 50,
-    ): Result<Long> {
-        if (pattern.isBlank()) return Result.Error("El patrón es obligatorio")
+    ): DomainResult<Long> {
+        if (pattern.isBlank()) return DomainResult.Error("El patrón es obligatorio")
         val id = classificationRepository.insertRule(
             ClassificationRule(
                 pattern = MerchantNormalizer.normalize(pattern),
@@ -71,35 +77,35 @@ class AddClassificationRuleUseCase @Inject constructor(
                 createdAt = Instant.now(),
             ),
         )
-        return Result.Success(id)
+        return DomainResult.Success(id)
     }
 }
 
-class DeleteClassificationRuleUseCase @Inject constructor(
+class DeleteClassificationRuleUseCase(
     private val classificationRepository: ClassificationRepository,
 ) {
-    suspend operator fun invoke(id: Long): Result<Unit> {
+    suspend operator fun invoke(id: Long): DomainResult<Unit> {
         classificationRepository.deleteRule(id)
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }
 
-class ObserveLearnedMappingsUseCase @Inject constructor(
+class ObserveLearnedMappingsUseCase(
     private val classificationRepository: ClassificationRepository,
 ) {
     operator fun invoke(): Flow<List<LearnedMerchantCategory>> =
         classificationRepository.observeLearnedMappings()
 }
 
-class LearnFromCorrectionUseCase @Inject constructor(
+class LearnFromCorrectionUseCase(
     private val classificationRepository: ClassificationRepository,
 ) {
     suspend operator fun invoke(
         merchantNormalized: String,
         categoryId: Long,
         subcategoryId: Long? = null,
-    ): Result<Unit> {
-        if (merchantNormalized.isBlank()) return Result.Error("Comercio inválido")
+    ): DomainResult<Unit> {
+        if (merchantNormalized.isBlank()) return DomainResult.Error("Comercio inválido")
         val now = Instant.now()
         classificationRepository.upsertLearnedMapping(
             LearnedMerchantCategory(
@@ -110,20 +116,20 @@ class LearnFromCorrectionUseCase @Inject constructor(
                 updatedAt = now,
             ),
         )
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }
 
-class RevertLearnedMappingUseCase @Inject constructor(
+class RevertLearnedMappingUseCase(
     private val classificationRepository: ClassificationRepository,
 ) {
-    suspend operator fun invoke(id: Long): Result<Unit> {
+    suspend operator fun invoke(id: Long): DomainResult<Unit> {
         classificationRepository.softDeleteLearnedMapping(id, Instant.now())
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }
 
-class RecordCategoryCorrectionUseCase @Inject constructor(
+class RecordCategoryCorrectionUseCase(
     private val transactionRepository: TransactionRepository,
     private val learnFromCorrectionUseCase: LearnFromCorrectionUseCase,
 ) {
@@ -131,9 +137,9 @@ class RecordCategoryCorrectionUseCase @Inject constructor(
         transactionId: Long,
         newCategoryId: Long,
         subcategoryId: Long? = null,
-    ): Result<Unit> {
+    ): DomainResult<Unit> {
         val transaction = transactionRepository.getTransaction(transactionId)
-            ?: return Result.Error("Transacción no encontrada")
+            ?: return DomainResult.Error("Transacción no encontrada")
 
         val now = Instant.now()
         val updated = transaction.copy(
@@ -158,6 +164,6 @@ class RecordCategoryCorrectionUseCase @Inject constructor(
 
         transactionRepository.updateTransaction(updated, changes)
         learnFromCorrectionUseCase(transaction.merchantNormalized, newCategoryId, subcategoryId)
-        return Result.Success(Unit)
+        return DomainResult.Success(Unit)
     }
 }
