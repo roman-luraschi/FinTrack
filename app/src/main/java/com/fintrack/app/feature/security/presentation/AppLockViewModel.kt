@@ -19,7 +19,8 @@ data class AppLockUiState(
     val lockEnabled: Boolean = false,
     val isLockStateReady: Boolean = false,
     val isUnlocked: Boolean = true,
-    val showLockOverlay: Boolean = false,
+    /** True after the user unlocked at least once this process (keeps NavHost mounted on re-lock). */
+    val hasUnlockedOnce: Boolean = false,
     val authError: BiometricAuthError? = null,
     val requestAuth: Boolean = false,
 )
@@ -55,7 +56,6 @@ class AppLockViewModel @Inject constructor(
                             current.copy(
                                 lockEnabled = false,
                                 isUnlocked = true,
-                                showLockOverlay = false,
                                 requestAuth = false,
                                 authError = null,
                             )
@@ -93,7 +93,6 @@ class AppLockViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isUnlocked = false,
-                showLockOverlay = true,
                 requestAuth = true,
                 authError = null,
             )
@@ -121,7 +120,7 @@ class AppLockViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isUnlocked = true,
-                        showLockOverlay = false,
+                        hasUnlockedOnce = true,
                         requestAuth = false,
                         authError = null,
                     )

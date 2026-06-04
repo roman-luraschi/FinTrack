@@ -16,8 +16,8 @@ object Routes {
     // Nested: settings (relative to [SETTINGS_GRAPH])
     const val SETTINGS_HOME = "home"
     const val SETTINGS_CATEGORIES = "categories"
-    const val SETTINGS_CLASSIFICATION_RULES = "classification/rules"
-    const val SETTINGS_CLASSIFICATION_LEARNED = "classification/learned"
+    const val SETTINGS_CLASSIFICATION_RULES = "classification-rules"
+    const val SETTINGS_CLASSIFICATION_LEARNED = "classification-learned"
 
     // Future: account management, imports, movement detail
     // const val ACCOUNT_ADD = "account/add"

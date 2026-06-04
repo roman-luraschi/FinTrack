@@ -93,16 +93,18 @@ fun FinTrackNavHost(modifier: Modifier = Modifier) {
                             onTransactionClick = callbacks.onTransactionClick,
                         )
                     },
-                    add = { onBack, onSaved ->
+                    add = { onBack, onSaved, backStackEntry ->
                         AddTransactionScreen(
                             onBack = onBack,
                             onSaved = onSaved,
+                            backStackEntry = backStackEntry,
                         )
                     },
-                    edit = { onBack, onSaved ->
+                    edit = { onBack, onSaved, backStackEntry ->
                         EditTransactionScreen(
                             onBack = onBack,
                             onSaved = onSaved,
+                            backStackEntry = backStackEntry,
                         )
                     },
                 ),

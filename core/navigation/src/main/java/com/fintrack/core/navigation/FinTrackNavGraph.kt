@@ -15,8 +15,8 @@ data class MovementsListCallbacks(
 
 data class MovementsGraphCallbacks(
     val list: @Composable (accountId: Long?, categoryId: Long?, callbacks: MovementsListCallbacks) -> Unit,
-    val add: @Composable (onBack: () -> Unit, onSaved: () -> Unit) -> Unit,
-    val edit: @Composable (onBack: () -> Unit, onSaved: () -> Unit) -> Unit,
+    val add: @Composable (onBack: () -> Unit, onSaved: () -> Unit, backStackEntry: NavBackStackEntry) -> Unit,
+    val edit: @Composable (onBack: () -> Unit, onSaved: () -> Unit, backStackEntry: NavBackStackEntry) -> Unit,
 )
 
 data class SettingsGraphCallbacks(
@@ -114,8 +114,8 @@ fun NavGraphBuilder.movementsGraph(
                     defaultValue = NavArgs.NONE
                 },
             ),
-        ) {
-            callbacks.add(navigateUp, navigateUp)
+        ) { backStackEntry ->
+            callbacks.add(navigateUp, navigateUp, backStackEntry)
         }
 
         composable(
@@ -123,8 +123,8 @@ fun NavGraphBuilder.movementsGraph(
             arguments = listOf(
                 navArgument(NavArgs.TRANSACTION_ID) { type = NavType.LongType },
             ),
-        ) {
-            callbacks.edit(navigateUp, navigateUp)
+        ) { backStackEntry ->
+            callbacks.edit(navigateUp, navigateUp, backStackEntry)
         }
     }
 }

@@ -38,10 +38,8 @@ class MainActivity : FragmentActivity() {
         appLockViewModel.onAppResumed()
     }
 
-    override fun onStop() {
-        super.onStop()
-        if (!isChangingConfigurations) {
-            appLockViewModel.lockWhenBackgrounded()
-        }
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        appLockViewModel.lockWhenBackgrounded()
     }
 }

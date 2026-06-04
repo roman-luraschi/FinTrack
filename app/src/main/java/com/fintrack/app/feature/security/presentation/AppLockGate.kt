@@ -3,6 +3,7 @@ package com.fintrack.app.feature.security.presentation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,6 +26,8 @@ fun AppLockGate(
     val showLockScreen = uiState.isLockStateReady &&
         uiState.lockEnabled &&
         !uiState.isUnlocked
+    val mountMainApp = uiState.isLockStateReady &&
+        (!uiState.lockEnabled || uiState.hasUnlockedOnce)
 
     if (showLockScreen) {
         BiometricAuthEffect(
@@ -47,6 +50,20 @@ fun AppLockGate(
                     CircularProgressIndicator()
                 }
             }
+            mountMainApp -> {
+                content()
+                if (showLockScreen) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        BiometricLockScreen(
+                            isPromptRequested = uiState.requestAuth,
+                            authError = uiState.authError,
+                            onScreenDisplayed = viewModel::onLockScreenDisplayed,
+                            onRetryClick = viewModel::retryAuth,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
             showLockScreen -> {
                 BiometricLockScreen(
                     isPromptRequested = uiState.requestAuth,
@@ -56,7 +73,6 @@ fun AppLockGate(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            else -> content()
         }
     }
 }
