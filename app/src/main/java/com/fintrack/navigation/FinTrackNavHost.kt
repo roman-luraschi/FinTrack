@@ -78,6 +78,9 @@ fun FinTrackNavHost(modifier: Modifier = Modifier) {
                         onCategoryClick = { categoryId ->
                             navController.navigateToMovementsList(categoryId = categoryId)
                         },
+                        onMovementClick = { transactionId ->
+                            navController.navigateToEditMovement(transactionId)
+                        },
                     )
                 },
                 movements = MovementsGraphCallbacks(

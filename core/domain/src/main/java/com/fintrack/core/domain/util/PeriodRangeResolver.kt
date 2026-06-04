@@ -38,4 +38,14 @@ object PeriodRangeResolver {
         val start = startOfWeek(instant).atZone(argentinaZone).toLocalDate()
         return start.plusDays(7).atStartOfDay(argentinaZone).toInstant().minusMillis(1)
     }
+
+    fun startOfDay(instant: Instant): Instant {
+        val localDate = instant.atZone(argentinaZone).toLocalDate()
+        return localDate.atStartOfDay(argentinaZone).toInstant()
+    }
+
+    fun endOfDay(instant: Instant): Instant {
+        val localDate = instant.atZone(argentinaZone).toLocalDate()
+        return localDate.plusDays(1).atStartOfDay(argentinaZone).toInstant().minusMillis(1)
+    }
 }

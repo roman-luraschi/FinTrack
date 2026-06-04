@@ -17,4 +17,12 @@
     <string name="income">Ingreso</string>
     <string name="search_hint">Buscar movimientos…</string>
     <string name="duplicate_warning">Posible duplicado detectado</string>
+    <string name="dashboard_spent_today">Gastado hoy</string>
+    <string name="dashboard_spent_month">Gastado este mes</string>
+    <string name="dashboard_movement_count">Movimientos</string>
+    <string name="dashboard_movement_count_subtitle">Este mes</string>
+    <string name="dashboard_top_category">Mayor gasto</string>
+    <string name="dashboard_no_top_category">Sin gastos por categoría</string>
+    <string name="dashboard_recent_movements">Últimos movimientos</string>
+    <string name="dashboard_loading">Cargando…</string>
 </resources>

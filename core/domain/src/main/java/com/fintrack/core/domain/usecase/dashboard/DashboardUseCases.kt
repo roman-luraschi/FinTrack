@@ -1,8 +1,10 @@
 package com.fintrack.core.domain.usecase.dashboard
 
 import com.fintrack.core.domain.model.CategoryTotal
+import com.fintrack.core.domain.model.DashboardOverview
 import com.fintrack.core.domain.model.DashboardPeriod
 import com.fintrack.core.domain.model.DashboardSummary
+import com.fintrack.core.domain.model.Transaction
 import com.fintrack.core.domain.model.TransactionFilter
 import com.fintrack.core.domain.model.TransactionType
 import com.fintrack.core.domain.repository.CategoryRepository
@@ -67,6 +69,67 @@ class ObserveDashboardSummaryUseCase @Inject constructor(
             }
         }
 }
+
+private const val RECENT_MOVEMENTS_LIMIT = 8
+
+@Singleton
+class ObserveDashboardOverviewUseCase @Inject constructor(
+    private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
+) {
+    operator fun invoke(period: DashboardPeriod = DashboardPeriod.MONTH): Flow<DashboardOverview> =
+        combine(
+            transactionRepository.observeTransactions(TransactionFilter()),
+            categoryRepository.observeCategories(),
+        ) { transactions, categories ->
+            val now = Instant.now()
+            val (periodStart, periodEnd) = PeriodRangeResolver.resolve(period, now)
+            val todayStart = PeriodRangeResolver.startOfDay(now)
+            val todayEnd = PeriodRangeResolver.endOfDay(now)
+            val categoryNames = categories.associateBy({ it.id }, { it.name })
+
+            val inPeriod = transactions.filter { it.transactionDate.isInRange(periodStart, periodEnd) }
+            val expensesInPeriod = inPeriod.filter { it.type == TransactionType.EXPENSE }
+            val spentToday = transactions
+                .filter { it.type == TransactionType.EXPENSE && it.transactionDate.isInRange(todayStart, todayEnd) }
+                .fold(BigDecimal.ZERO) { acc, tx -> acc.add(tx.amount) }
+            val spentThisMonth = expensesInPeriod
+                .fold(BigDecimal.ZERO) { acc, tx -> acc.add(tx.amount) }
+
+            val topExpenseCategory = expensesInPeriod
+                .filter { it.categoryId != null }
+                .groupBy { it.categoryId!! }
+                .map { (categoryId, txs) ->
+                    CategoryTotal(
+                        categoryId = categoryId,
+                        categoryName = categoryNames[categoryId] ?: "Sin nombre",
+                        total = txs.fold(BigDecimal.ZERO) { acc, tx -> acc.add(tx.amount) },
+                    )
+                }
+                .maxByOrNull { it.total }
+
+            val recentTransactions = transactions
+                .sortedWith(
+                    compareByDescending<Transaction> { it.transactionDate }
+                        .thenByDescending { it.id },
+                )
+                .take(RECENT_MOVEMENTS_LIMIT)
+
+            DashboardOverview(
+                spentToday = spentToday,
+                spentThisMonth = spentThisMonth,
+                movementCountInPeriod = inPeriod.size,
+                topExpenseCategory = topExpenseCategory,
+                recentTransactions = recentTransactions,
+                categoryNamesById = categoryNames,
+                periodStart = periodStart,
+                periodEnd = periodEnd,
+            )
+        }
+}
+
+private fun Instant.isInRange(start: Instant, end: Instant): Boolean =
+    !isBefore(start) && !isAfter(end)
 
 @Singleton
 class GetDashboardSummaryUseCase @Inject constructor(

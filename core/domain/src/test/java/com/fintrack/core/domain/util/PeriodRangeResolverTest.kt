@@ -25,6 +25,23 @@ class PeriodRangeResolverTest {
     }
 
     @Test
+    fun dayRange_coversFullCalendarDay() {
+        val reference = LocalDate.of(2025, 6, 15)
+            .atTime(14, 30)
+            .atZone(PeriodRangeResolver.argentinaZone)
+            .toInstant()
+        val start = PeriodRangeResolver.startOfDay(reference)
+        val end = PeriodRangeResolver.endOfDay(reference)
+
+        assertTrue(start <= reference)
+        assertTrue(end >= reference)
+        val startLocal = start.atZone(PeriodRangeResolver.argentinaZone).toLocalDate()
+        val endLocal = end.atZone(PeriodRangeResolver.argentinaZone).toLocalDate()
+        assertTrue(startLocal.dayOfMonth == 15)
+        assertTrue(endLocal.dayOfMonth == 15)
+    }
+
+    @Test
     fun weekRange_startsOnMonday() {
         val wednesday = LocalDate.of(2025, 6, 4)
             .atTime(12, 0)
