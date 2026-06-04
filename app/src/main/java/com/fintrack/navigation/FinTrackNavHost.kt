@@ -18,7 +18,8 @@ import com.fintrack.app.feature.dashboard.presentation.DashboardScreen
 import com.fintrack.app.feature.settings.presentation.ClassificationRulesScreen
 import com.fintrack.app.feature.settings.presentation.LearnedMappingsScreen
 import com.fintrack.app.feature.settings.presentation.SettingsScreen
-import com.fintrack.app.feature.transactions.presentation.TransactionFormScreen
+import com.fintrack.app.feature.transactions.presentation.form.AddTransactionScreen
+import com.fintrack.app.feature.transactions.presentation.form.EditTransactionScreen
 import com.fintrack.app.feature.transactions.presentation.list.TransactionListScreen
 import com.fintrack.core.navigation.BottomNavItem
 import com.fintrack.core.navigation.MovementsGraphCallbacks
@@ -93,13 +94,13 @@ fun FinTrackNavHost(modifier: Modifier = Modifier) {
                         )
                     },
                     add = { onBack, onSaved ->
-                        TransactionFormScreen(
+                        AddTransactionScreen(
                             onBack = onBack,
                             onSaved = onSaved,
                         )
                     },
                     edit = { onBack, onSaved ->
-                        TransactionFormScreen(
+                        EditTransactionScreen(
                             onBack = onBack,
                             onSaved = onSaved,
                         )

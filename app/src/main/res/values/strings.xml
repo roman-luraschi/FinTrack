@@ -42,4 +42,22 @@
     <string name="needs_review">Revisar categoría</string>
     <string name="add_movement">Agregar movimiento</string>
     <string name="filters_active">Filtros activos</string>
+    <string name="edit_transaction">Editar movimiento</string>
+    <string name="field_amount">Monto</string>
+    <string name="field_description">Descripción</string>
+    <string name="field_notes">Notas</string>
+    <string name="field_notes_optional">Notas (opcional)</string>
+    <string name="field_date">Fecha</string>
+    <string name="field_category">Categoría</string>
+    <string name="field_account">Cuenta</string>
+    <string name="category_none">Sin categoría</string>
+    <string name="error_invalid_amount">El monto debe ser mayor a cero</string>
+    <string name="error_description_required">La descripción es obligatoria</string>
+    <string name="error_account_required">Seleccioná una cuenta</string>
+    <string name="duplicate_warning_detail">Posible duplicado: %d movimiento(s) similar(es)</string>
+    <string name="loading_transaction">Cargando…</string>
+    <string name="back">Volver</string>
+    <string name="confirm">Confirmar</string>
+    <string name="transaction_detail">Detalle</string>
+    <string name="edit">Editar</string>
 </resources>
