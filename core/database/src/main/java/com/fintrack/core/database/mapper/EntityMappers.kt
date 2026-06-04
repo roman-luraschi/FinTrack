@@ -4,16 +4,21 @@ import com.fintrack.core.database.entity.AccountEntity
 import com.fintrack.core.database.entity.CategoryEntity
 import com.fintrack.core.database.entity.CategoryTotalEntity
 import com.fintrack.core.database.entity.ClassificationRuleEntity
+import com.fintrack.core.database.entity.IngestionBatchEntity
 import com.fintrack.core.database.entity.LearnedMerchantCategoryEntity
 import com.fintrack.core.database.entity.TransactionChangeEntity
 import com.fintrack.core.database.entity.TransactionEntity
+import com.fintrack.core.database.entity.TransactionProvenanceEntity
 import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.Category
 import com.fintrack.core.domain.model.CategoryTotal
 import com.fintrack.core.domain.model.ClassificationRule
+import com.fintrack.core.domain.model.IngestionBatch
 import com.fintrack.core.domain.model.LearnedMerchantCategory
 import com.fintrack.core.domain.model.Transaction
 import com.fintrack.core.domain.model.TransactionChange
+import com.fintrack.core.domain.model.TransactionProvenance
+import com.fintrack.core.domain.model.TransactionWithProvenance
 import java.math.BigDecimal
 
 fun AccountEntity.toDomain(): Account = Account(
@@ -23,6 +28,9 @@ fun AccountEntity.toDomain(): Account = Account(
     currency = currency,
     colorHex = colorHex,
     isDefault = isDefault,
+    integrationProvider = integrationProvider,
+    externalAccountId = externalAccountId,
+    notificationListenerEnabled = notificationListenerEnabled,
     createdAt = createdAt,
     updatedAt = updatedAt,
     deletedAt = deletedAt,
@@ -35,6 +43,9 @@ fun Account.toEntity(): AccountEntity = AccountEntity(
     currency = currency,
     colorHex = colorHex,
     isDefault = isDefault,
+    integrationProvider = integrationProvider,
+    externalAccountId = externalAccountId,
+    notificationListenerEnabled = notificationListenerEnabled,
     createdAt = createdAt,
     updatedAt = updatedAt,
     deletedAt = deletedAt,
@@ -66,8 +77,11 @@ fun TransactionEntity.toDomain(): Transaction = Transaction(
     id = id,
     externalId = externalId,
     amount = amount,
+    currency = currency,
     type = type,
+    status = status,
     description = description,
+    descriptionRaw = descriptionRaw,
     merchantNormalized = merchantNormalized,
     categoryId = categoryId,
     subcategoryId = subcategoryId,
@@ -76,8 +90,10 @@ fun TransactionEntity.toDomain(): Transaction = Transaction(
     needsReview = needsReview,
     source = source,
     accountId = accountId,
+    transferAccountId = transferAccountId,
     transactionDate = transactionDate,
     notes = notes,
+    ingestionBatchId = ingestionBatchId,
     createdAt = createdAt,
     updatedAt = updatedAt,
     deletedAt = deletedAt,
@@ -87,8 +103,11 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     id = id,
     externalId = externalId,
     amount = amount,
+    currency = currency,
     type = type,
+    status = status,
     description = description,
+    descriptionRaw = descriptionRaw,
     merchantNormalized = merchantNormalized,
     categoryId = categoryId,
     subcategoryId = subcategoryId,
@@ -97,11 +116,91 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     needsReview = needsReview,
     source = source,
     accountId = accountId,
+    transferAccountId = transferAccountId,
     transactionDate = transactionDate,
     notes = notes,
+    ingestionBatchId = ingestionBatchId,
     createdAt = createdAt,
     updatedAt = updatedAt,
     deletedAt = deletedAt,
+)
+
+fun TransactionEntity.toDomainWithProvenance(
+    provenance: TransactionProvenanceEntity?,
+): TransactionWithProvenance = TransactionWithProvenance(
+    transaction = toDomain(),
+    provenance = provenance?.toDomain(),
+)
+
+fun TransactionWithProvenance.toEntities(): Pair<TransactionEntity, TransactionProvenanceEntity?> =
+    transaction.toEntity() to provenance?.toEntity()
+
+fun TransactionProvenanceEntity.toDomain(): TransactionProvenance = TransactionProvenance(
+    transactionId = transactionId,
+    integrationProvider = integrationProvider,
+    providerCode = providerCode,
+    rawPayload = rawPayload,
+    payloadFormat = payloadFormat,
+    parseStatus = parseStatus,
+    parserVersion = parserVersion,
+    dedupMatchType = dedupMatchType,
+    dedupMatchedTransactionId = dedupMatchedTransactionId,
+    weakDedupKey = weakDedupKey,
+    capturedAt = capturedAt,
+    metadataJson = metadataJson,
+)
+
+fun TransactionProvenance.toEntity(): TransactionProvenanceEntity = TransactionProvenanceEntity(
+    transactionId = transactionId,
+    integrationProvider = integrationProvider,
+    providerCode = providerCode,
+    rawPayload = rawPayload,
+    payloadFormat = payloadFormat,
+    parseStatus = parseStatus,
+    parserVersion = parserVersion,
+    dedupMatchType = dedupMatchType,
+    dedupMatchedTransactionId = dedupMatchedTransactionId,
+    weakDedupKey = weakDedupKey,
+    capturedAt = capturedAt,
+    metadataJson = metadataJson,
+)
+
+fun IngestionBatchEntity.toDomain(): IngestionBatch = IngestionBatch(
+    id = id,
+    operationId = operationId,
+    source = source,
+    status = status,
+    targetAccountId = targetAccountId,
+    fileName = fileName,
+    fileHash = fileHash,
+    recordCount = recordCount,
+    insertedCount = insertedCount,
+    updatedCount = updatedCount,
+    skippedCount = skippedCount,
+    errorCount = errorCount,
+    errorSummary = errorSummary,
+    startedAt = startedAt,
+    completedAt = completedAt,
+    createdAt = createdAt,
+)
+
+fun IngestionBatch.toEntity(): IngestionBatchEntity = IngestionBatchEntity(
+    id = id,
+    operationId = operationId,
+    source = source,
+    status = status,
+    targetAccountId = targetAccountId,
+    fileName = fileName,
+    fileHash = fileHash,
+    recordCount = recordCount,
+    insertedCount = insertedCount,
+    updatedCount = updatedCount,
+    skippedCount = skippedCount,
+    errorCount = errorCount,
+    errorSummary = errorSummary,
+    startedAt = startedAt,
+    completedAt = completedAt,
+    createdAt = createdAt,
 )
 
 fun ClassificationRuleEntity.toDomain(): ClassificationRule = ClassificationRule(

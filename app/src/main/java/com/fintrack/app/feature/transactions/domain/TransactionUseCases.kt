@@ -7,6 +7,7 @@ import com.fintrack.core.domain.model.Transaction
 import com.fintrack.core.domain.model.TransactionChange
 import com.fintrack.core.domain.model.TransactionFilter
 import com.fintrack.core.domain.model.TransactionSource
+import com.fintrack.core.domain.model.TransactionStatus
 import com.fintrack.core.domain.model.TransactionType
 import com.fintrack.core.domain.repository.TransactionRepository
 import com.fintrack.app.feature.classification.domain.ClassifyExpenseUseCase
@@ -69,7 +70,9 @@ class AddTransactionUseCase @Inject constructor(
 
         val transaction = Transaction(
             amount = normalizedAmount,
+            currency = "ARS",
             type = type,
+            status = TransactionStatus.CONFIRMED,
             description = description.trim(),
             merchantNormalized = merchantNormalized,
             categoryId = resolvedCategoryId,

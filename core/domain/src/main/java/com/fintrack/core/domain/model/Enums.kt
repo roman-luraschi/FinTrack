@@ -15,6 +15,47 @@ enum class TransactionSource {
     OCR,
 }
 
+enum class TransactionStatus {
+    CONFIRMED,
+    PENDING,
+    NEEDS_REVIEW,
+    DUPLICATE_CANDIDATE,
+    REJECTED,
+}
+
+enum class IngestionBatchStatus {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    PARTIAL,
+    FAILED,
+}
+
+enum class DedupMatchType {
+    NONE,
+    STRONG,
+    WEAK,
+}
+
+enum class ParseStatus {
+    SUCCESS,
+    PARTIAL,
+    FAILED,
+}
+
+enum class IntegrationProvider {
+    MERCADO_PAGO,
+    GALICIA,
+    SANTANDER,
+    BBVA,
+    MACRO,
+    BRUBANK,
+    UALA,
+    PERSONAL_PAY,
+    GENERIC_BANK,
+    UNKNOWN,
+}
+
 enum class ClassificationSource {
     RULE,
     LEARNED,
@@ -41,6 +82,9 @@ enum class ChangeReason {
     USER_EDIT,
     RECLASSIFICATION,
     IMPORT,
+    SYNC,
+    OCR_CORRECTION,
+    NOTIFICATION_REPARSE,
 }
 
 enum class DashboardPeriod {

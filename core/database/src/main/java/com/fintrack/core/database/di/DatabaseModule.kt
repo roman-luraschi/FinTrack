@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.fintrack.core.database.MIGRATION_1_2
 import com.fintrack.core.database.seed.DatabaseSeedData
 import dagger.Module
 import dagger.Provides
@@ -25,6 +26,7 @@ object DatabaseModule {
             FinTrackDatabase::class.java,
             "fintrack.db",
         )
+            .addMigrations(MIGRATION_1_2)
             .addCallback(SeedCallback())
             .build()
 
@@ -67,8 +69,12 @@ private class SeedCallback : RoomDatabase.Callback() {
 
         db.execSQL(
             """
-            INSERT INTO accounts (name, type, currency, colorHex, isDefault, createdAt, updatedAt, deletedAt)
-            VALUES ('Efectivo', 'CASH', 'ARS', '#1B5E20', 1, $now, $now, NULL)
+            INSERT INTO accounts (
+                name, type, currency, colorHex, isDefault,
+                integrationProvider, externalAccountId, notificationListenerEnabled,
+                createdAt, updatedAt, deletedAt
+            )
+            VALUES ('Efectivo', 'CASH', 'ARS', '#1B5E20', 1, NULL, NULL, 0, $now, $now, NULL)
             """.trimIndent(),
         )
     }

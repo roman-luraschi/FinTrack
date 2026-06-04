@@ -11,20 +11,24 @@ import com.fintrack.core.database.dao.TransactionDao
 import com.fintrack.core.database.entity.AccountEntity
 import com.fintrack.core.database.entity.CategoryEntity
 import com.fintrack.core.database.entity.ClassificationRuleEntity
+import com.fintrack.core.database.entity.IngestionBatchEntity
 import com.fintrack.core.database.entity.LearnedMerchantCategoryEntity
 import com.fintrack.core.database.entity.TransactionChangeEntity
 import com.fintrack.core.database.entity.TransactionEntity
+import com.fintrack.core.database.entity.TransactionProvenanceEntity
 
 @Database(
     entities = [
         AccountEntity::class,
         CategoryEntity::class,
+        IngestionBatchEntity::class,
         TransactionEntity::class,
         ClassificationRuleEntity::class,
         LearnedMerchantCategoryEntity::class,
         TransactionChangeEntity::class,
+        TransactionProvenanceEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(FinTrackTypeConverters::class)

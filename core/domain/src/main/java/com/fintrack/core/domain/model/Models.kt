@@ -7,8 +7,11 @@ data class Transaction(
     val id: Long = 0,
     val externalId: String? = null,
     val amount: BigDecimal,
+    val currency: String = "ARS",
     val type: TransactionType,
+    val status: TransactionStatus = TransactionStatus.CONFIRMED,
     val description: String,
+    val descriptionRaw: String? = null,
     val merchantNormalized: String,
     val categoryId: Long? = null,
     val subcategoryId: Long? = null,
@@ -17,11 +20,77 @@ data class Transaction(
     val needsReview: Boolean = false,
     val source: TransactionSource = TransactionSource.MANUAL,
     val accountId: Long,
+    val transferAccountId: Long? = null,
     val transactionDate: Instant,
     val notes: String? = null,
+    val ingestionBatchId: Long? = null,
     val createdAt: Instant,
     val updatedAt: Instant,
     val deletedAt: Instant? = null,
+)
+
+data class TransactionProvenance(
+    val transactionId: Long,
+    val integrationProvider: IntegrationProvider,
+    val providerCode: String? = null,
+    val rawPayload: String,
+    val payloadFormat: String,
+    val parseStatus: ParseStatus,
+    val parserVersion: String,
+    val dedupMatchType: DedupMatchType = DedupMatchType.NONE,
+    val dedupMatchedTransactionId: Long? = null,
+    val weakDedupKey: String? = null,
+    val capturedAt: Instant,
+    val metadataJson: String? = null,
+)
+
+data class IngestionBatch(
+    val id: Long = 0,
+    val operationId: String,
+    val source: TransactionSource,
+    val status: IngestionBatchStatus,
+    val targetAccountId: Long? = null,
+    val fileName: String? = null,
+    val fileHash: String? = null,
+    val recordCount: Int = 0,
+    val insertedCount: Int = 0,
+    val updatedCount: Int = 0,
+    val skippedCount: Int = 0,
+    val errorCount: Int = 0,
+    val errorSummary: String? = null,
+    val startedAt: Instant,
+    val completedAt: Instant? = null,
+    val createdAt: Instant,
+)
+
+data class ProvenanceDraft(
+    val integrationProvider: IntegrationProvider,
+    val providerCode: String? = null,
+    val rawPayload: String,
+    val payloadFormat: String,
+    val parseStatus: ParseStatus,
+    val capturedAt: Instant,
+    val metadataJson: String? = null,
+)
+
+data class TransactionDraft(
+    val externalId: String?,
+    val amount: BigDecimal,
+    val currency: String = "ARS",
+    val type: TransactionType,
+    val description: String,
+    val descriptionRaw: String? = null,
+    val source: TransactionSource,
+    val accountId: Long,
+    val transferAccountId: Long? = null,
+    val transactionDate: Instant,
+    val status: TransactionStatus = TransactionStatus.PENDING,
+    val provenance: ProvenanceDraft,
+)
+
+data class TransactionWithProvenance(
+    val transaction: Transaction,
+    val provenance: TransactionProvenance?,
 )
 
 data class Account(
@@ -31,6 +100,9 @@ data class Account(
     val currency: String = "ARS",
     val colorHex: String? = null,
     val isDefault: Boolean = false,
+    val integrationProvider: IntegrationProvider? = null,
+    val externalAccountId: String? = null,
+    val notificationListenerEnabled: Boolean = false,
     val createdAt: Instant,
     val updatedAt: Instant,
     val deletedAt: Instant? = null,
@@ -109,13 +181,20 @@ data class ClassificationResult(
     val needsReview: Boolean = false,
 )
 
-data class IngestionBatch(
+data class IngestionRequest(
+    val operationId: String,
     val source: TransactionSource,
-    val items: List<Transaction>,
+    val targetAccountId: Long? = null,
+    val fileName: String? = null,
+    val fileHash: String? = null,
+    val drafts: List<TransactionDraft>,
 )
 
 data class IngestionResult(
+    val batchId: Long,
     val inserted: Int,
     val updated: Int,
     val skipped: Int,
+    val errors: Int,
+    val duplicateCandidates: List<Long>,
 )

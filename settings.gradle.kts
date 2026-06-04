@@ -22,6 +22,7 @@ rootProject.name = "FinTrack"
 include(":app")
 include(":core:common")
 include(":core:domain")
+include(":core:data")
 include(":core:database")
 include(":core:designsystem")
 include(":core:navigation")
