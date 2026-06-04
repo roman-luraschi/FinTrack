@@ -7,4 +7,5 @@ interface BiometricLockPort {
     fun observeLockEnabled(): Flow<Boolean>
     suspend fun setLockEnabled(enabled: Boolean)
     fun checkAvailability(): BiometricAvailability
+    fun refreshLockState()
 }

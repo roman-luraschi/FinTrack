@@ -2,44 +2,61 @@ package com.fintrack.app.feature.security.presentation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fintrack.R
 import com.fintrack.app.data.security.BiometricAuthResult
 
+/**
+ * Gates app access Mercado Pago-style: a dedicated unlock screen first, then the main app.
+ */
 @Composable
 fun AppLockGate(
+    viewModel: AppLockViewModel,
     modifier: Modifier = Modifier,
-    viewModel: AppLockViewModel = hiltViewModel(),
     content: @Composable () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.onColdStart()
+    val showLockScreen = uiState.isLockStateReady &&
+        uiState.lockEnabled &&
+        !uiState.isUnlocked
+
+    if (showLockScreen) {
+        BiometricAuthEffect(
+            requestAuth = uiState.requestAuth,
+            subtitleResId = R.string.biometric_lock_prompt,
+            onResult = viewModel::onAuthResult,
+            onRequestConsumed = viewModel::onAuthRequestConsumed,
+            onAuthenticationStarted = viewModel::onAuthenticationStarted,
+            onAuthenticationFinished = viewModel::onAuthenticationFinished,
+        )
     }
 
-    BiometricAuthEffect(
-        requestAuth = uiState.requestAuth,
-        subtitleResId = R.string.biometric_lock_subtitle,
-        onResult = viewModel::onAuthResult,
-        onRequestConsumed = viewModel::onAuthRequestConsumed,
-    )
-
     Box(modifier = modifier.fillMaxSize()) {
-        if (uiState.isUnlocked) {
-            content()
-        }
-        if (uiState.showLockOverlay) {
-            BiometricLockScreen(
-                authError = uiState.authError,
-                onUnlockClick = viewModel::retryAuth,
-                modifier = Modifier.fillMaxSize(),
-            )
+        when {
+            !uiState.isLockStateReady -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            showLockScreen -> {
+                BiometricLockScreen(
+                    isPromptRequested = uiState.requestAuth,
+                    authError = uiState.authError,
+                    onScreenDisplayed = viewModel::onLockScreenDisplayed,
+                    onRetryClick = viewModel::retryAuth,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            else -> content()
         }
     }
 }

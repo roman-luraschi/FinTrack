@@ -1,8 +1,5 @@
 package com.fintrack.app.feature.security.presentation
 
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.security.BiometricAuthError
@@ -12,12 +9,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AppLockUiState(
     val lockEnabled: Boolean = false,
+    val isLockStateReady: Boolean = false,
     val isUnlocked: Boolean = true,
     val showLockOverlay: Boolean = false,
     val authError: BiometricAuthError? = null,
@@ -27,52 +27,66 @@ data class AppLockUiState(
 @HiltViewModel
 class AppLockViewModel @Inject constructor(
     private val biometricLockPort: BiometricLockPort,
-) : ViewModel(), DefaultLifecycleObserver {
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppLockUiState())
     val uiState: StateFlow<AppLockUiState> = _uiState.asStateFlow()
-    private var isFirstLockPreferenceEmission = true
+    private var isAuthenticationInProgress = false
 
     init {
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         viewModelScope.launch {
-            biometricLockPort.observeLockEnabled().collect { enabled ->
-                val wasEnabled = _uiState.value.lockEnabled
-                _uiState.update { current ->
-                    if (!enabled) {
-                        current.copy(
-                            lockEnabled = false,
-                            isUnlocked = true,
-                            showLockOverlay = false,
-                            requestAuth = false,
-                            authError = null,
-                        )
-                    } else {
-                        current.copy(lockEnabled = true)
-                    }
-                }
-                when {
-                    isFirstLockPreferenceEmission -> {
-                        isFirstLockPreferenceEmission = false
-                        if (enabled) lock()
-                    }
-                    enabled && !wasEnabled -> Unit
-                }
+            val lockEnabledOnStart = biometricLockPort.observeLockEnabled().first()
+            _uiState.update {
+                it.copy(
+                    lockEnabled = lockEnabledOnStart,
+                    isLockStateReady = true,
+                )
             }
+            if (lockEnabledOnStart) {
+                lock()
+            }
+
+            biometricLockPort.observeLockEnabled()
+                .drop(1)
+                .collect { enabled ->
+                    val wasEnabled = _uiState.value.lockEnabled
+                    _uiState.update { current ->
+                        if (!enabled) {
+                            current.copy(
+                                lockEnabled = false,
+                                isUnlocked = true,
+                                showLockOverlay = false,
+                                requestAuth = false,
+                                authError = null,
+                            )
+                        } else {
+                            current.copy(lockEnabled = true)
+                        }
+                    }
+                    if (enabled && !wasEnabled && _uiState.value.isUnlocked) {
+                        lock()
+                    }
+                }
         }
     }
 
-    fun onColdStart() {
-        if (_uiState.value.lockEnabled && !_uiState.value.showLockOverlay) {
-            lock()
-        }
+    fun onAppResumed() {
+        biometricLockPort.refreshLockState()
     }
 
-    override fun onStop(owner: LifecycleOwner) {
+    fun onAuthenticationStarted() {
+        isAuthenticationInProgress = true
+    }
+
+    fun onAuthenticationFinished() {
+        isAuthenticationInProgress = false
+    }
+
+    fun lockWhenBackgrounded() {
+        if (isAuthenticationInProgress) return
         val state = _uiState.value
-        if (state.lockEnabled && state.isUnlocked) {
-            lock()
-        }
+        if (!state.lockEnabled || !state.isUnlocked) return
+        lock()
     }
 
     fun lock() {
@@ -83,6 +97,13 @@ class AppLockViewModel @Inject constructor(
                 requestAuth = true,
                 authError = null,
             )
+        }
+    }
+
+    fun onLockScreenDisplayed() {
+        val state = _uiState.value
+        if (state.lockEnabled && !state.isUnlocked && !state.requestAuth) {
+            retryAuth()
         }
     }
 
@@ -117,8 +138,4 @@ class AppLockViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
-        super.onCleared()
-    }
 }

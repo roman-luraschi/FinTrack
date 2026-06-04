@@ -60,9 +60,12 @@
     <string name="transaction_detail">Detalle</string>
     <string name="edit">Editar</string>
     <string name="biometric_lock_title">Desbloquear FinTrack</string>
-    <string name="biometric_lock_subtitle">Usá tu huella, rostro o PIN del dispositivo</string>
-    <string name="biometric_settings_title">Bloqueo biométrico</string>
+    <string name="biometric_lock_subtitle">Ingresá con tu huella o el PIN de tu celular</string>
+    <string name="biometric_lock_prompt">Confirmá tu identidad para ingresar</string>
+    <string name="biometric_settings_title">Protección con huella</string>
     <string name="biometric_settings_summary">Pedir autenticación al abrir la app</string>
+    <string name="biometric_settings_always_on">Siempre activa al abrir y volver a la app</string>
+    <string name="biometric_settings_unavailable">No disponible hasta configurar huella o PIN en el dispositivo</string>
     <string name="biometric_unlock">Desbloquear</string>
     <string name="biometric_retry">Reintentar</string>
     <string name="biometric_error_canceled">Autenticación cancelada</string>

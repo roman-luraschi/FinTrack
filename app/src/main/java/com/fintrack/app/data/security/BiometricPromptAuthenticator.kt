@@ -4,6 +4,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.fintrack.R
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,12 +12,19 @@ import javax.inject.Singleton
 class BiometricPromptAuthenticator @Inject constructor(
     private val capabilityChecker: BiometricCapabilityChecker,
 ) {
+    private val isPromptShowing = AtomicBoolean(false)
+
     fun authenticate(
         activity: FragmentActivity,
-        subtitleResId: Int = R.string.biometric_lock_subtitle,
+        subtitleResId: Int = R.string.biometric_lock_prompt,
         onResult: (BiometricAuthResult) -> Unit,
     ) {
+        if (!isPromptShowing.compareAndSet(false, true)) {
+            return
+        }
+
         if (capabilityChecker.check() != com.fintrack.core.domain.model.BiometricAvailability.Ready) {
+            isPromptShowing.set(false)
             onResult(BiometricAuthResult.Error(BiometricAuthError.Unavailable))
             return
         }
@@ -24,10 +32,12 @@ class BiometricPromptAuthenticator @Inject constructor(
         val executor = ContextCompat.getMainExecutor(activity)
         val callback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                isPromptShowing.set(false)
                 onResult(BiometricAuthResult.Success)
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                isPromptShowing.set(false)
                 onResult(BiometricAuthResult.Error(mapErrorCode(errorCode)))
             }
 
@@ -36,14 +46,18 @@ class BiometricPromptAuthenticator @Inject constructor(
             }
         }
 
-        val prompt = BiometricPrompt(activity, executor, callback)
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(activity.getString(R.string.biometric_lock_title))
-            .setSubtitle(activity.getString(subtitleResId))
-            .setAllowedAuthenticators(capabilityChecker.allowedAuthenticators)
-            .build()
-
-        prompt.authenticate(promptInfo)
+        try {
+            val prompt = BiometricPrompt(activity, executor, callback)
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle(activity.getString(R.string.biometric_lock_title))
+                .setSubtitle(activity.getString(subtitleResId))
+                .setAllowedAuthenticators(capabilityChecker.allowedAuthenticators)
+                .build()
+            prompt.authenticate(promptInfo)
+        } catch (e: IllegalStateException) {
+            isPromptShowing.set(false)
+            onResult(BiometricAuthResult.Error(BiometricAuthError.Unknown))
+        }
     }
 
     private fun mapErrorCode(errorCode: Int): BiometricAuthError = when (errorCode) {

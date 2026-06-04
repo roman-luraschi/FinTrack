@@ -20,7 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,7 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fintrack.R
 import com.fintrack.core.designsystem.components.EmptyStateMessage
 import com.fintrack.core.designsystem.components.ErrorMessage
-import com.fintrack.app.feature.security.presentation.BiometricAuthEffect
 import com.fintrack.app.feature.security.presentation.toHelpMessageRes
 import com.fintrack.core.designsystem.components.FinTrackTopBar
 import com.fintrack.core.domain.model.AccountType
@@ -52,14 +50,10 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var accountName by rememberSaveable { mutableStateOf("") }
-    val biometricSwitchEnabled = uiState.biometricAvailability == BiometricAvailability.Ready
 
-    BiometricAuthEffect(
-        requestAuth = uiState.requestEnableAuth,
-        subtitleResId = R.string.biometric_confirm_enable,
-        onResult = viewModel::onEnableAuthResult,
-        onRequestConsumed = viewModel::onEnableAuthRequestConsumed,
-    )
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.refreshBiometricAvailability()
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         FinTrackTopBar(title = stringResource(R.string.nav_settings))
@@ -68,31 +62,30 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = stringResource(R.string.biometric_settings_title))
-                        Text(
-                            text = stringResource(R.string.biometric_settings_summary),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    Switch(
-                        checked = uiState.biometricLockEnabled,
-                        onCheckedChange = viewModel::onBiometricLockToggle,
-                        enabled = biometricSwitchEnabled || uiState.biometricLockEnabled,
-                    )
-                }
-                uiState.biometricAvailability.toHelpMessageRes()?.let { helpRes ->
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = stringResource(helpRes),
+                        text = stringResource(R.string.biometric_settings_title),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = when (uiState.biometricAvailability) {
+                            BiometricAvailability.Ready ->
+                                stringResource(R.string.biometric_settings_always_on)
+                            else ->
+                                stringResource(R.string.biometric_settings_unavailable)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
                     )
+                    uiState.biometricAvailability.toHelpMessageRes()?.let { helpRes ->
+                        Text(
+                            text = stringResource(helpRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
                 }
             }
             item {
