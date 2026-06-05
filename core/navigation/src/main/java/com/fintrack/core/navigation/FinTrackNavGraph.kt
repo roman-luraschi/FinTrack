@@ -106,13 +106,14 @@ fun NavGraphBuilder.movementsGraph(
             )
         }
 
+        composable(Routes.MOVEMENT_CREATE_BASE) { backStackEntry ->
+            callbacks.add(navigateUp, navigateUp, backStackEntry)
+        }
+
         composable(
             route = Routes.MOVEMENT_CREATE,
             arguments = listOf(
-                navArgument(NavArgs.ACCOUNT_ID) {
-                    type = NavType.LongType
-                    defaultValue = NavArgs.NONE
-                },
+                navArgument(NavArgs.ACCOUNT_ID) { type = NavType.LongType },
             ),
         ) { backStackEntry ->
             callbacks.add(navigateUp, navigateUp, backStackEntry)
