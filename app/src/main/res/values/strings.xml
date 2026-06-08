@@ -40,6 +40,9 @@
     <string name="movement_deleted">Movimiento eliminado</string>
     <string name="movement_delete_error">No se pudo eliminar el movimiento</string>
     <string name="needs_review">Revisar categoría</string>
+    <string name="suggested_category">Sugerida: %1$s</string>
+    <string name="accept_suggestion">Aceptar sugerencia</string>
+    <string name="suggestion_accepted">Categoría confirmada</string>
     <string name="add_movement">Agregar movimiento</string>
     <string name="filters_active">Filtros activos</string>
     <string name="edit_transaction">Editar movimiento</string>

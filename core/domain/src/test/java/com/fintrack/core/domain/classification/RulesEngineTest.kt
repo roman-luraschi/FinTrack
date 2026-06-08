@@ -38,6 +38,34 @@ class RulesEngineTest {
         assertEquals(1L, result?.categoryId)
     }
 
+    @Test
+    fun `inactive rules are ignored`() {
+        val rules = listOf(
+            rule("SPOTIFY", MatchType.CONTAINS, 6).copy(isActive = false),
+        )
+        assertNull(engine.classify("SPOTIFY PREMIUM", rules))
+    }
+
+    @Test
+    fun `prefix match works`() {
+        val rules = listOf(rule("MERCADO", MatchType.PREFIX, 11))
+        val result = engine.classify("MERCADO LIBRE COMPRA", rules)
+        assertEquals(11L, result?.categoryId)
+    }
+
+    @Test
+    fun `exact match requires full equality`() {
+        val rules = listOf(rule("RAPPI", MatchType.EXACT, 1))
+        assertNull(engine.classify("RAPPI FOOD", rules))
+        assertEquals(1L, engine.classify("RAPPI", rules)?.categoryId)
+    }
+
+    @Test
+    fun `invalid regex returns no match`() {
+        val rules = listOf(rule("[invalid", MatchType.REGEX, 1))
+        assertNull(engine.classify("ANY MERCHANT", rules))
+    }
+
     private fun rule(pattern: String, matchType: MatchType, categoryId: Long, priority: Int = 50) =
         ClassificationRule(
             pattern = pattern,

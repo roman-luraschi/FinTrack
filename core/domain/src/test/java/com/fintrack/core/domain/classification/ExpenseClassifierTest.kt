@@ -65,6 +65,48 @@ class ExpenseClassifierTest {
         assertEquals(ClassificationSource.DEFAULT, result.source)
     }
 
+    @Test
+    fun `learning wins over similarity when no rule matches`() {
+        val learned = listOf(
+            LearnedMerchantCategory(
+                merchantNormalized = "FARMACITY CENTRO",
+                categoryId = 8L,
+                learnedAt = now,
+                updatedAt = now,
+            ),
+        )
+        val rules = listOf(
+            ClassificationRule(
+                pattern = "FARMACITY",
+                matchType = MatchType.EXACT,
+                categoryId = 8L,
+                createdAt = now,
+            ),
+        )
+        val result = classifier.classify(
+            description = "FARMACITY CENTRO",
+            rules = rules,
+            learnedMappings = learned,
+            defaultCategoryId = 14L,
+        )
+        assertEquals(8L, result.categoryId)
+        assertEquals(ClassificationSource.LEARNED, result.source)
+    }
+
+    @Test
+    fun `similarity applies when no rule or learning match`() {
+        val rules = listOf(rule("MCDONALDS", 1L))
+        val result = classifier.classify(
+            description = "MCDONALD",
+            rules = rules,
+            learnedMappings = emptyList(),
+            defaultCategoryId = 14L,
+            fuzzyThreshold = SimilarityEngine.DEFAULT_THRESHOLD,
+        )
+        assertEquals(1L, result.categoryId)
+        assertEquals(ClassificationSource.SIMILARITY, result.source)
+    }
+
     private fun rule(pattern: String, categoryId: Long) = ClassificationRule(
         pattern = pattern,
         matchType = MatchType.CONTAINS,

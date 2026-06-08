@@ -2,6 +2,7 @@ package com.fintrack.core.domain.usecase.transaction
 
 import com.fintrack.core.domain.classification.MerchantNormalizer
 import com.fintrack.core.domain.common.DomainResult
+import com.fintrack.core.domain.model.ChangeReason
 import com.fintrack.core.domain.model.ClassificationSource
 import com.fintrack.core.domain.model.Transaction
 import com.fintrack.core.domain.model.TransactionFilter
@@ -13,6 +14,7 @@ import com.fintrack.core.domain.repository.UserSettingsPort
 import com.fintrack.core.domain.transaction.TransactionChangeRecorder
 import com.fintrack.core.domain.transaction.TransactionValidator
 import com.fintrack.core.domain.usecase.classification.ClassifyExpenseUseCase
+import com.fintrack.core.domain.usecase.classification.LearnFromCorrectionUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.math.BigDecimal
@@ -112,21 +114,53 @@ data class AddTransactionResult(
 @Singleton
 class UpdateTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
+    private val learnFromCorrectionUseCase: LearnFromCorrectionUseCase,
 ) {
     suspend operator fun invoke(
         transaction: Transaction,
         previous: Transaction,
     ): DomainResult<Unit> {
         val now = Instant.now()
-        val changes = TransactionChangeRecorder.recordUserEdit(previous, transaction, now)
-
-        transactionRepository.updateTransaction(
-            transaction.copy(
-                merchantNormalized = MerchantNormalizer.normalize(transaction.description),
-                updatedAt = now,
-            ),
-            changes,
+        val normalized = transaction.copy(
+            merchantNormalized = MerchantNormalizer.normalize(transaction.description),
+            updatedAt = now,
         )
+        val categoryChanged = previous.categoryId != normalized.categoryId ||
+            previous.subcategoryId != normalized.subcategoryId
+
+        val toSave = if (categoryChanged) {
+            normalized.copy(
+                classificationSource = ClassificationSource.USER_OVERRIDE,
+                classificationConfidence = null,
+                needsReview = false,
+            )
+        } else {
+            normalized
+        }
+
+        val changes = TransactionChangeRecorder.recordUserEdit(previous, toSave, now).map { change ->
+            if (categoryChanged && change.fieldName == "categoryId") {
+                change.copy(changeReason = ChangeReason.RECLASSIFICATION)
+            } else {
+                change
+            }
+        }
+
+        transactionRepository.updateTransaction(toSave, changes)
+
+        if (
+            categoryChanged &&
+            toSave.type == TransactionType.EXPENSE &&
+            toSave.categoryId != null &&
+            toSave.merchantNormalized.isNotBlank()
+        ) {
+            learnFromCorrectionUseCase(
+                merchantNormalized = toSave.merchantNormalized,
+                categoryId = toSave.categoryId,
+                subcategoryId = toSave.subcategoryId,
+            )
+        }
+
         return DomainResult.Success(Unit)
     }
 }

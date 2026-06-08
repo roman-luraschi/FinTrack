@@ -15,6 +15,11 @@ data class TransactionDraft(
     val transferAccountId: Long? = null,
     val transactionDate: Instant,
     val status: TransactionStatus = TransactionStatus.PENDING,
+    val categoryId: Long? = null,
+    val subcategoryId: Long? = null,
+    val classificationSource: ClassificationSource? = null,
+    val classificationConfidence: Float? = null,
+    val classificationNeedsReview: Boolean? = null,
     val provenance: ProvenanceDraft,
 )
 

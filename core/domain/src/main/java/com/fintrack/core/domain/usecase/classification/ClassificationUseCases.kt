@@ -51,7 +51,7 @@ class ClassifyExpenseUseCase @Inject constructor(
     }
 
     companion object {
-        private const val DEFAULT_CATEGORY_NAME = "Otros"
+        private const val DEFAULT_CATEGORY_NAME = "Sin clasificar"
     }
 }
 
@@ -174,6 +174,37 @@ class RecordCategoryCorrectionUseCase @Inject constructor(
 
         transactionRepository.updateTransaction(updated, changes)
         learnFromCorrectionUseCase(transaction.merchantNormalized, newCategoryId, subcategoryId)
+        return DomainResult.Success(Unit)
+    }
+}
+
+@Singleton
+class AcceptClassificationSuggestionUseCase @Inject constructor(
+    private val transactionRepository: TransactionRepository,
+) {
+    suspend operator fun invoke(transactionId: Long): DomainResult<Unit> {
+        val transaction = transactionRepository.getTransaction(transactionId)
+            ?: return DomainResult.Error("Transacción no encontrada")
+        if (!transaction.needsReview) {
+            return DomainResult.Success(Unit)
+        }
+
+        val now = Instant.now()
+        val updated = transaction.copy(
+            needsReview = false,
+            updatedAt = now,
+        )
+        val changes = listOf(
+            TransactionChange(
+                transactionId = transactionId,
+                fieldName = "needsReview",
+                oldValue = "true",
+                newValue = "false",
+                changedAt = now,
+                changeReason = ChangeReason.USER_EDIT,
+            ),
+        )
+        transactionRepository.updateTransaction(updated, changes)
         return DomainResult.Success(Unit)
     }
 }

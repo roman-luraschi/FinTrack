@@ -18,4 +18,22 @@ class MerchantNormalizerTest {
     fun `collapses whitespace`() {
         assertEquals("MERCADO LIBRE", MerchantNormalizer.normalize("  mercado   libre  "))
     }
+
+    @Test
+    fun `normalizes spanish accents in merchant names`() {
+        assertEquals("PANADERIA EL NINO", MerchantNormalizer.normalize("Panadería El Niño"))
+    }
+
+    @Test
+    fun `normalizes mercado pago style description with asterisk and numbers`() {
+        assertEquals(
+            "MCDONALD S 1234 PALERMO",
+            MerchantNormalizer.normalize("*McDonald's #1234 - Palermo"),
+        )
+    }
+
+    @Test
+    fun `blank input returns empty string`() {
+        assertEquals("", MerchantNormalizer.normalize("   "))
+    }
 }

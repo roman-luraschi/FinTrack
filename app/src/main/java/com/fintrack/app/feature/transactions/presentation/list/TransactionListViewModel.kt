@@ -10,6 +10,7 @@ import com.fintrack.core.domain.model.TransactionFilter
 import com.fintrack.core.domain.model.TransactionType
 import com.fintrack.core.domain.usecase.account.ObserveAccountsUseCase
 import com.fintrack.core.domain.usecase.category.ObserveRootCategoriesUseCase
+import com.fintrack.core.domain.usecase.classification.AcceptClassificationSuggestionUseCase
 import com.fintrack.core.domain.usecase.transaction.DeleteTransactionUseCase
 import com.fintrack.core.domain.usecase.transaction.ObserveTransactionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,7 @@ class TransactionListViewModel @Inject constructor(
     observeAccountsUseCase: ObserveAccountsUseCase,
     observeRootCategoriesUseCase: ObserveRootCategoriesUseCase,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
+    private val acceptClassificationSuggestionUseCase: AcceptClassificationSuggestionUseCase,
 ) : ViewModel() {
 
     private val searchQuery = savedStateHandle.getStateFlow("search_query", "")
@@ -95,6 +97,7 @@ class TransactionListViewModel @Inject constructor(
                 categoryName = tx.categoryId?.let { categoryMap[it]?.name },
                 dateLabel = DateUtils.formatDate(tx.transactionDate),
                 needsReview = tx.needsReview,
+                suggestedCategoryName = tx.categoryId?.let { categoryMap[it]?.name },
             )
         }
         TransactionListUiState(
@@ -145,6 +148,8 @@ class TransactionListViewModel @Inject constructor(
                 }
             is TransactionListUserEvent.DeleteRequested ->
                 pendingDeleteId.value = event.id
+            is TransactionListUserEvent.AcceptSuggestionRequested ->
+                acceptSuggestion(event.id)
             TransactionListUserEvent.DeleteDismissed ->
                 pendingDeleteId.value = null
             TransactionListUserEvent.DeleteConfirmed -> confirmDelete()
@@ -171,6 +176,20 @@ class TransactionListViewModel @Inject constructor(
                 }
             }
             isDeleting.value = false
+        }
+    }
+
+    private fun acceptSuggestion(transactionId: Long) {
+        viewModelScope.launch {
+            errorMessage.value = null
+            when (val result = acceptClassificationSuggestionUseCase(transactionId)) {
+                is DomainResult.Success ->
+                    effectsChannel.send(TransactionListUiEffect.SuggestionAccepted)
+                is DomainResult.Error -> {
+                    errorMessage.value = result.message
+                    effectsChannel.send(TransactionListUiEffect.ShowError(result.message))
+                }
+            }
         }
     }
 }

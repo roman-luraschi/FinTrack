@@ -1,5 +1,6 @@
 package com.fintrack.core.data.mapper
 
+import com.fintrack.core.domain.model.ClassificationSource
 import com.fintrack.core.domain.model.DedupMatchType
 import com.fintrack.core.domain.model.IntegrationProvider
 import com.fintrack.core.domain.model.ParseStatus
@@ -63,5 +64,40 @@ class TransactionDraftMapperTest {
 
         assertEquals(key1, key2)
         assertTrue(key1.contains("100.00"))
+    }
+
+    @Test
+    fun `toTransactionWithProvenance applies classification fields from draft`() {
+        val now = Instant.parse("2026-06-03T12:00:00Z")
+        val draft = TransactionDraft(
+            externalId = "mp-456",
+            amount = BigDecimal("500.00"),
+            type = TransactionType.EXPENSE,
+            description = "Spotify Premium",
+            source = TransactionSource.CSV_IMPORT,
+            accountId = 1L,
+            transactionDate = now,
+            categoryId = 6L,
+            classificationSource = ClassificationSource.RULE,
+            classificationConfidence = 1.0f,
+            classificationNeedsReview = false,
+            provenance = ProvenanceDraft(
+                integrationProvider = IntegrationProvider.MERCADO_PAGO,
+                rawPayload = "{}",
+                payloadFormat = "json",
+                parseStatus = ParseStatus.SUCCESS,
+                capturedAt = now,
+            ),
+        )
+
+        val (transaction, _) = draft.toTransactionWithProvenance(
+            ingestionBatchId = 1L,
+            now = now,
+        )
+
+        assertEquals(6L, transaction.categoryId)
+        assertEquals(ClassificationSource.RULE, transaction.classificationSource)
+        assertEquals(1.0f, transaction.classificationConfidence)
+        assertEquals(false, transaction.needsReview)
     }
 }

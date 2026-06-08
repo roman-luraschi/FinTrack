@@ -70,6 +70,7 @@ fun TransactionListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val movementDeletedMessage = stringResource(R.string.movement_deleted)
+    val suggestionAcceptedMessage = stringResource(R.string.suggestion_accepted)
     val addMovementDescription = stringResource(R.string.add_movement)
 
     LaunchedEffect(initialAccountId, initialCategoryId) {
@@ -87,6 +88,8 @@ fun TransactionListScreen(
                 is TransactionListUiEffect.NavigateToEdit -> onTransactionClick(effect.transactionId)
                 TransactionListUiEffect.MovementDeleted ->
                     snackbarHostState.showSnackbar(movementDeletedMessage)
+                TransactionListUiEffect.SuggestionAccepted ->
+                    snackbarHostState.showSnackbar(suggestionAcceptedMessage)
                 is TransactionListUiEffect.ShowError ->
                     snackbarHostState.showSnackbar(effect.message)
             }
@@ -218,6 +221,9 @@ fun TransactionListScreen(
                                 },
                                 onDelete = {
                                     viewModel.onEvent(TransactionListUserEvent.DeleteRequested(item.id))
+                                },
+                                onAcceptSuggestion = {
+                                    viewModel.onEvent(TransactionListUserEvent.AcceptSuggestionRequested(item.id))
                                 },
                             )
                         }
@@ -410,6 +416,7 @@ private fun MovementRow(
     item: TransactionListItem,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onAcceptSuggestion: () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -458,6 +465,15 @@ private fun MovementRow(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
+                        item.suggestedCategoryName?.let { categoryName ->
+                            Text(
+                                text = stringResource(R.string.suggested_category, categoryName),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        TextButton(onClick = onAcceptSuggestion) {
+                            Text(stringResource(R.string.accept_suggestion))
+                        }
                     }
                 }
                 AmountText(

@@ -20,7 +20,9 @@ fun TransactionDraft.toTransactionWithProvenance(
 ): Pair<Transaction, TransactionProvenance> {
     val merchantNormalized = MerchantNormalizer.normalize(description)
     val resolvedStatus = statusOverride ?: status
-    val resolvedNeedsReview = needsReviewOverride ?: (resolvedStatus == TransactionStatus.DUPLICATE_CANDIDATE)
+    val resolvedNeedsReview = needsReviewOverride
+        ?: classificationNeedsReview
+        ?: (resolvedStatus == TransactionStatus.DUPLICATE_CANDIDATE)
 
     val transaction = Transaction(
         externalId = externalId,
@@ -31,7 +33,10 @@ fun TransactionDraft.toTransactionWithProvenance(
         description = description.trim(),
         descriptionRaw = descriptionRaw,
         merchantNormalized = merchantNormalized,
-        classificationSource = ClassificationSource.DEFAULT,
+        categoryId = categoryId,
+        subcategoryId = subcategoryId,
+        classificationSource = classificationSource ?: ClassificationSource.DEFAULT,
+        classificationConfidence = classificationConfidence,
         needsReview = resolvedNeedsReview,
         source = source,
         accountId = accountId,
