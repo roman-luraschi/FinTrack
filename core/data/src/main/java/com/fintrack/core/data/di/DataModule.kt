@@ -1,5 +1,9 @@
 package com.fintrack.core.data.di
 
+import com.fintrack.core.data.notification.NotificationEnabledAccountsCache
+import com.fintrack.core.data.notification.NotificationEnabledAccountsProvider
+import com.fintrack.core.data.notification.NotificationRelevanceFilter
+import com.fintrack.core.data.notification.NotificationRelevanceFilterImpl
 import com.fintrack.core.data.repository.AccountRepositoryImpl
 import com.fintrack.core.data.repository.CategoryRepositoryImpl
 import com.fintrack.core.data.repository.ClassificationRepositoryImpl
@@ -38,4 +42,16 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindTransactionIngestionPort(impl: TransactionIngestionPortImpl): TransactionIngestionPort
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationEnabledAccountsProvider(
+        impl: NotificationEnabledAccountsCache,
+    ): NotificationEnabledAccountsProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRelevanceFilter(
+        impl: NotificationRelevanceFilterImpl,
+    ): NotificationRelevanceFilter
 }

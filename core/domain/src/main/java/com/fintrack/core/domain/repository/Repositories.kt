@@ -13,6 +13,7 @@ import java.time.Instant
 
 interface AccountRepository {
     fun observeAccounts(): Flow<List<Account>>
+    fun observeNotificationEnabledAccounts(): Flow<List<Account>>
     fun observeAccount(id: Long): Flow<Account?>
     suspend fun getAccount(id: Long): Account?
     suspend fun getDefaultAccount(): Account?

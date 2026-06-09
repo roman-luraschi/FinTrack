@@ -1,5 +1,9 @@
 package com.fintrack.app.feature.settings.presentation
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,18 +24,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.fintrack.R
 import com.fintrack.core.designsystem.components.EmptyStateMessage
 import com.fintrack.core.designsystem.components.ErrorMessage
@@ -51,8 +62,22 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var accountName by rememberSaveable { mutableStateOf("") }
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        viewModel.refreshBiometricAvailability()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
+
+    val postNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            viewModel.setMovementAlertEnabled(true)
+        }
+    }
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshBiometricAvailability()
+            viewModel.refreshNotificationAccess()
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -89,6 +114,84 @@ fun SettingsScreen(
                 }
             }
             item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.notification_access_title),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = if (uiState.notificationListenerEnabled) {
+                            stringResource(R.string.notification_access_enabled)
+                        } else {
+                            stringResource(R.string.notification_access_disabled)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.notification_access_privacy),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    if (uiState.showListenerDisconnectHint) {
+                        Text(
+                            text = stringResource(R.string.notification_access_oem_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    if (!uiState.notificationListenerEnabled) {
+                        Button(
+                            onClick = viewModel::openNotificationAccessSettings,
+                            modifier = Modifier.padding(top = 8.dp),
+                        ) {
+                            Text(stringResource(R.string.notification_access_open_settings))
+                        }
+                    }
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.movement_alert_title),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = stringResource(R.string.movement_alert_summary),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    Switch(
+                        checked = uiState.movementAlertEnabled,
+                        onCheckedChange = { enabled ->
+                            if (!enabled) {
+                                viewModel.setMovementAlertEnabled(false)
+                                return@Switch
+                            }
+                            val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS,
+                                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (needsPermission) {
+                                postNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                viewModel.setMovementAlertEnabled(true)
+                            }
+                        },
+                    )
+                }
+            }
+            item {
                 Text("Umbral fuzzy: ${"%.2f".format(uiState.fuzzyThreshold)}")
                 Slider(
                     value = uiState.fuzzyThreshold,
@@ -114,17 +217,17 @@ fun SettingsScreen(
                 }
             }
             items(uiState.accounts, key = { it.id }) { account ->
-                Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                    Text(text = "${account.name}${if (account.isDefault) " (default)" else ""}")
-                    TextButton(onClick = { viewModel.setDefaultAccount(account.id) }) {
-                        Text("Predeterminada")
-                    }
-                    if (!account.isDefault) {
-                        TextButton(onClick = { viewModel.deleteAccount(account.id) }) {
-                            Text(stringResource(R.string.delete))
-                        }
-                    }
-                }
+                AccountNotificationSettingsRow(
+                    account = account,
+                    onNotificationListenerChanged = { enabled ->
+                        viewModel.setAccountNotificationListener(account.id, enabled)
+                    },
+                    onIntegrationProviderChanged = { provider ->
+                        viewModel.setAccountIntegrationProvider(account.id, provider)
+                    },
+                    onSetDefault = { viewModel.setDefaultAccount(account.id) },
+                    onDelete = { viewModel.deleteAccount(account.id) },
+                )
             }
             item {
                 Text(

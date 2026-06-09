@@ -45,6 +45,10 @@ class UserPreferences @Inject constructor(
         prefs[KEY_BIOMETRIC_LOCK] ?: false
     }
 
+    val movementAlertEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_MOVEMENT_ALERT] ?: true
+    }
+
     suspend fun setDefaultAccountId(id: Long?) {
         context.dataStore.edit { prefs ->
             if (id != null) prefs[KEY_DEFAULT_ACCOUNT] = id else prefs.remove(KEY_DEFAULT_ACCOUNT)
@@ -75,12 +79,19 @@ class UserPreferences @Inject constructor(
         }
     }
 
+    suspend fun setMovementAlertEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_MOVEMENT_ALERT] = enabled
+        }
+    }
+
     companion object {
         private val KEY_DEFAULT_ACCOUNT = longPreferencesKey("default_account_id")
         private val KEY_FUZZY_THRESHOLD = floatPreferencesKey("fuzzy_threshold")
         private val KEY_DASHBOARD_PERIOD = stringPreferencesKey("dashboard_period")
         private val KEY_FIRST_LAUNCH = booleanPreferencesKey("first_launch_completed")
         private val KEY_BIOMETRIC_LOCK = booleanPreferencesKey("biometric_lock_enabled")
+        private val KEY_MOVEMENT_ALERT = booleanPreferencesKey("movement_alert_enabled")
 
         const val DEFAULT_FUZZY_THRESHOLD = 0.85f
     }

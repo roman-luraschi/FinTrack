@@ -22,6 +22,9 @@ class AccountRepositoryImpl @Inject constructor(
     override fun observeAccounts(): Flow<List<Account>> =
         accountDao.observeAll().map { list -> list.map { it.toDomain() } }
 
+    override fun observeNotificationEnabledAccounts(): Flow<List<Account>> =
+        accountDao.observeNotificationEnabled().map { list -> list.map { it.toDomain() } }
+
     override fun observeAccount(id: Long): Flow<Account?> =
         accountDao.observeById(id).map { it?.toDomain() }
 

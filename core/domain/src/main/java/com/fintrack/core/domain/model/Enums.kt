@@ -52,6 +52,7 @@ enum class IntegrationProvider {
     BRUBANK,
     UALA,
     PERSONAL_PAY,
+    CIUDAD,
     GENERIC_BANK,
     UNKNOWN,
 }

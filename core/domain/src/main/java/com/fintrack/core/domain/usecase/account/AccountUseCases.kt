@@ -3,6 +3,7 @@ package com.fintrack.core.domain.usecase.account
 import com.fintrack.core.domain.common.DomainResult
 import com.fintrack.core.domain.model.Account
 import com.fintrack.core.domain.model.AccountType
+import com.fintrack.core.domain.model.IntegrationProvider
 import com.fintrack.core.domain.repository.AccountRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -76,6 +77,31 @@ class SetDefaultAccountUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(id: Long): DomainResult<Unit> {
         accountRepository.setDefaultAccount(id)
+        return DomainResult.Success(Unit)
+    }
+}
+
+@Singleton
+class UpdateAccountNotificationSettingsUseCase @Inject constructor(
+    private val accountRepository: AccountRepository,
+) {
+    suspend operator fun invoke(
+        accountId: Long,
+        notificationListenerEnabled: Boolean,
+        integrationProvider: IntegrationProvider?,
+    ): DomainResult<Unit> {
+        val account = accountRepository.getAccount(accountId)
+            ?: return DomainResult.Error("Cuenta no encontrada")
+        if (notificationListenerEnabled && integrationProvider == null) {
+            return DomainResult.Error("Seleccioná la app del banco o billetera")
+        }
+        accountRepository.updateAccount(
+            account.copy(
+                notificationListenerEnabled = notificationListenerEnabled,
+                integrationProvider = integrationProvider,
+                updatedAt = Instant.now(),
+            ),
+        )
         return DomainResult.Success(Unit)
     }
 }

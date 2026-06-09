@@ -8,6 +8,7 @@ import com.fintrack.core.data.dto.IngestionItemDto
 import com.fintrack.core.data.dto.ManualTransactionDto
 import com.fintrack.core.data.dto.MercadoPagoTransactionDto
 import com.fintrack.core.data.dto.OcrReceiptDto
+import com.fintrack.core.data.notification.IntegrationProviderResolver
 import com.fintrack.core.domain.classification.MerchantNormalizer
 import com.fintrack.core.domain.model.IntegrationProvider
 import com.fintrack.core.domain.model.ParseStatus
@@ -32,6 +33,7 @@ data class ParsedNotificationFields(
     val type: TransactionType,
     val description: String,
     val transactionDate: Instant,
+    val needsReview: Boolean = false,
 )
 
 data class CsvColumnMapping(
@@ -146,10 +148,10 @@ fun BankNotificationDto.toDraft(
     }
 
     val externalId = "$packageName:$notificationId"
-    val provider = resolveProviderFromPackage(packageName)
+    val provider = IntegrationProviderResolver.fromPackage(packageName)
     val rawPayload = buildNotificationPayload(this)
-    val parseStatus = ParseStatus.SUCCESS
-    val status = TransactionStatus.CONFIRMED
+    val parseStatus = if (parsed.needsReview) ParseStatus.PARTIAL else ParseStatus.SUCCESS
+    val status = if (parsed.needsReview) TransactionStatus.NEEDS_REVIEW else TransactionStatus.CONFIRMED
     val capturedAt = Instant.ofEpochMilli(postedAt)
 
     return DomainResult.Success(
@@ -377,18 +379,6 @@ private fun mapMercadoPagoOperationType(operationType: String): TransactionType 
     operationType.contains("payment", ignoreCase = true) -> TransactionType.EXPENSE
     operationType.contains("income", ignoreCase = true) -> TransactionType.INCOME
     else -> TransactionType.EXPENSE
-}
-
-private fun resolveProviderFromPackage(packageName: String): IntegrationProvider = when {
-    packageName.contains("galicia", ignoreCase = true) -> IntegrationProvider.GALICIA
-    packageName.contains("santander", ignoreCase = true) -> IntegrationProvider.SANTANDER
-    packageName.contains("bbva", ignoreCase = true) -> IntegrationProvider.BBVA
-    packageName.contains("macro", ignoreCase = true) -> IntegrationProvider.MACRO
-    packageName.contains("brubank", ignoreCase = true) -> IntegrationProvider.BRUBANK
-    packageName.contains("uala", ignoreCase = true) -> IntegrationProvider.UALA
-    packageName.contains("personalpay", ignoreCase = true) -> IntegrationProvider.PERSONAL_PAY
-    packageName.contains("mercadopago", ignoreCase = true) -> IntegrationProvider.MERCADO_PAGO
-    else -> IntegrationProvider.GENERIC_BANK
 }
 
 private fun buildNotificationPayload(dto: BankNotificationDto): String =

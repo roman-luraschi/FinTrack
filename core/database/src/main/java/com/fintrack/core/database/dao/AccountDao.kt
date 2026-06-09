@@ -14,6 +14,15 @@ interface AccountDao {
     @Query("SELECT * FROM accounts WHERE deletedAt IS NULL ORDER BY isDefault DESC, name ASC")
     fun observeAll(): Flow<List<AccountEntity>>
 
+    @Query(
+        """
+        SELECT * FROM accounts
+        WHERE deletedAt IS NULL AND notificationListenerEnabled = 1
+        ORDER BY isDefault DESC, name ASC
+        """,
+    )
+    fun observeNotificationEnabled(): Flow<List<AccountEntity>>
+
     @Query("SELECT * FROM accounts WHERE id = :id AND deletedAt IS NULL")
     fun observeById(id: Long): Flow<AccountEntity?>
 
