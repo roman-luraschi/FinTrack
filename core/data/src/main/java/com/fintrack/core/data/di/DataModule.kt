@@ -7,11 +7,15 @@ import com.fintrack.core.data.notification.NotificationRelevanceFilterImpl
 import com.fintrack.core.data.repository.AccountRepositoryImpl
 import com.fintrack.core.data.repository.CategoryRepositoryImpl
 import com.fintrack.core.data.repository.ClassificationRepositoryImpl
+import com.fintrack.core.data.mercadopago.MercadoPagoSyncPortImpl
+import com.fintrack.core.data.repository.FinTrackBackendRepositoryImpl
 import com.fintrack.core.data.repository.TransactionIngestionPortImpl
 import com.fintrack.core.data.repository.TransactionRepositoryImpl
 import com.fintrack.core.domain.repository.AccountRepository
 import com.fintrack.core.domain.repository.CategoryRepository
 import com.fintrack.core.domain.repository.ClassificationRepository
+import com.fintrack.core.domain.repository.FinTrackBackendPort
+import com.fintrack.core.domain.repository.MercadoPagoSyncPort
 import com.fintrack.core.domain.repository.TransactionIngestionPort
 import com.fintrack.core.domain.repository.TransactionRepository
 import dagger.Binds
@@ -54,4 +58,16 @@ abstract class DataModule {
     abstract fun bindNotificationRelevanceFilter(
         impl: NotificationRelevanceFilterImpl,
     ): NotificationRelevanceFilter
+
+    @Binds
+    @Singleton
+    abstract fun bindFinTrackBackendPort(
+        impl: FinTrackBackendRepositoryImpl,
+    ): FinTrackBackendPort
+
+    @Binds
+    @Singleton
+    abstract fun bindMercadoPagoSyncPort(
+        impl: MercadoPagoSyncPortImpl,
+    ): MercadoPagoSyncPort
 }

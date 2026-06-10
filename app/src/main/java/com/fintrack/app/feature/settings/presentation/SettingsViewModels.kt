@@ -3,7 +3,10 @@ package com.fintrack.app.feature.settings.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.preferences.UserPreferences
+import com.fintrack.app.feature.mercadopago.MercadoPagoCustomTabLauncher
+import com.fintrack.app.feature.mercadopago.MercadoPagoSyncScheduler
 import com.fintrack.core.domain.model.BiometricAvailability
+import com.fintrack.core.domain.model.MercadoPagoConnectionState
 import com.fintrack.core.domain.repository.BiometricLockPort
 import com.fintrack.core.domain.repository.NotificationAccessPort
 import com.fintrack.core.domain.usecase.account.AddAccountUseCase
@@ -11,6 +14,11 @@ import com.fintrack.core.domain.usecase.account.DeleteAccountUseCase
 import com.fintrack.core.domain.usecase.account.ObserveAccountsUseCase
 import com.fintrack.core.domain.usecase.account.SetDefaultAccountUseCase
 import com.fintrack.core.domain.usecase.account.UpdateAccountNotificationSettingsUseCase
+import com.fintrack.core.domain.usecase.backend.EnsureDeviceRegisteredUseCase
+import com.fintrack.core.domain.usecase.mercadopago.ConnectMercadoPagoUseCase
+import com.fintrack.core.domain.usecase.mercadopago.DisconnectMercadoPagoUseCase
+import com.fintrack.core.domain.usecase.mercadopago.ObserveMercadoPagoConnectionUseCase
+import com.fintrack.core.domain.usecase.mercadopago.SyncMercadoPagoMovementsUseCase
 import com.fintrack.core.domain.usecase.classification.AddClassificationRuleUseCase
 import com.fintrack.core.domain.usecase.classification.DeleteClassificationRuleUseCase
 import com.fintrack.core.domain.usecase.classification.ObserveClassificationRulesUseCase
@@ -26,6 +34,7 @@ import com.fintrack.core.domain.model.ClassificationRule
 import com.fintrack.core.domain.model.DashboardPeriod
 import com.fintrack.core.domain.model.LearnedMerchantCategory
 import com.fintrack.core.domain.model.MatchType
+import com.fintrack.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +51,9 @@ data class SettingsUiState(
     val notificationListenerEnabled: Boolean = false,
     val movementAlertEnabled: Boolean = true,
     val showListenerDisconnectHint: Boolean = false,
+    val mercadoPagoConnection: MercadoPagoConnectionState = MercadoPagoConnectionState(),
+    val isConnectingMercadoPago: Boolean = false,
+    val isSyncingMercadoPago: Boolean = false,
     val message: String? = null,
     val errorMessage: String? = null,
 )
@@ -68,7 +80,18 @@ class SettingsViewModel @Inject constructor(
     private val userPreferences: UserPreferences,
     private val biometricLockPort: BiometricLockPort,
     private val notificationAccessPort: NotificationAccessPort,
+    private val ensureDeviceRegisteredUseCase: EnsureDeviceRegisteredUseCase,
+    observeMercadoPagoConnectionUseCase: ObserveMercadoPagoConnectionUseCase,
+    private val connectMercadoPagoUseCase: ConnectMercadoPagoUseCase,
+    private val disconnectMercadoPagoUseCase: DisconnectMercadoPagoUseCase,
+    private val syncMercadoPagoMovementsUseCase: SyncMercadoPagoMovementsUseCase,
+    private val mercadoPagoCustomTabLauncher: MercadoPagoCustomTabLauncher,
+    private val mercadoPagoSyncScheduler: MercadoPagoSyncScheduler,
 ) : ViewModel() {
+
+    init {
+        ensureBackendReady()
+    }
 
     private val _message = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
     private val _error = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
@@ -76,30 +99,43 @@ class SettingsViewModel @Inject constructor(
         kotlinx.coroutines.flow.MutableStateFlow(biometricLockPort.checkAvailability())
     private val _notificationListenerEnabled =
         kotlinx.coroutines.flow.MutableStateFlow(notificationAccessPort.isListenerEnabled())
+    private val _isConnectingMercadoPago = kotlinx.coroutines.flow.MutableStateFlow(false)
+    private val _isSyncingMercadoPago = kotlinx.coroutines.flow.MutableStateFlow(false)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
-            observeAccountsUseCase(),
-            userPreferences.fuzzyThreshold,
-            userPreferences.dashboardPeriod,
-            userPreferences.movementAlertEnabled,
-            _biometricAvailability,
-        ) { accounts, threshold, period, movementAlerts, availability ->
-            SettingsUiState(
-                accounts = accounts,
-                fuzzyThreshold = threshold,
-                dashboardPeriod = period,
-                movementAlertEnabled = movementAlerts,
-                biometricAvailability = availability,
+            combine(
+                observeAccountsUseCase(),
+                userPreferences.fuzzyThreshold,
+                userPreferences.dashboardPeriod,
+                userPreferences.movementAlertEnabled,
+                _biometricAvailability,
+            ) { accounts, threshold, period, movementAlerts, availability ->
+                SettingsUiState(
+                    accounts = accounts,
+                    fuzzyThreshold = threshold,
+                    dashboardPeriod = period,
+                    movementAlertEnabled = movementAlerts,
+                    biometricAvailability = availability,
+                )
+            },
+            observeMercadoPagoConnectionUseCase(),
+            _notificationListenerEnabled,
+            _isConnectingMercadoPago,
+            _isSyncingMercadoPago,
+        ) { state, mpConnection, notifEnabled, isConnectingMp, isSyncingMp ->
+            state.copy(
+                mercadoPagoConnection = mpConnection,
+                notificationListenerEnabled = notifEnabled,
+                showListenerDisconnectHint = state.accounts.any { it.notificationListenerEnabled } && !notifEnabled,
+                isConnectingMercadoPago = isConnectingMp,
+                isSyncingMercadoPago = isSyncingMp,
             )
         },
-        _notificationListenerEnabled,
         _message,
         _error,
-    ) { state, notifEnabled, message, error ->
+    ) { state, message, error ->
         state.copy(
-            notificationListenerEnabled = notifEnabled,
-            showListenerDisconnectHint = state.accounts.any { it.notificationListenerEnabled } && !notifEnabled,
             message = message,
             errorMessage = error,
         )
@@ -113,6 +149,15 @@ class SettingsViewModel @Inject constructor(
     fun refreshNotificationAccess() {
         notificationAccessPort.refreshListenerState()
         _notificationListenerEnabled.value = notificationAccessPort.isListenerEnabled()
+    }
+
+    fun ensureBackendReady() {
+        viewModelScope.launch {
+            when (val result = ensureDeviceRegisteredUseCase(appVersion = BuildConfig.VERSION_NAME)) {
+                is DomainResult.Success -> Unit
+                is DomainResult.Error -> _error.value = result.message
+            }
+        }
     }
 
     fun openNotificationAccessSettings() {
@@ -167,6 +212,42 @@ class SettingsViewModel @Inject constructor(
                 is DomainResult.Success -> _message.value = "Configuración de notificaciones guardada"
                 is DomainResult.Error -> _error.value = result.message
             }
+        }
+    }
+
+    fun connectMercadoPago() {
+        viewModelScope.launch {
+            _isConnectingMercadoPago.value = true
+            when (val result = connectMercadoPagoUseCase(appVersion = BuildConfig.VERSION_NAME)) {
+                is DomainResult.Success -> mercadoPagoCustomTabLauncher.openAuthorizationUrl(result.data)
+                is DomainResult.Error -> _error.value = result.message
+            }
+            _isConnectingMercadoPago.value = false
+        }
+    }
+
+    fun disconnectMercadoPago() {
+        viewModelScope.launch {
+            disconnectMercadoPagoUseCase()
+            mercadoPagoSyncScheduler.cancelAll()
+            _message.value = "Mercado Pago desconectado"
+        }
+    }
+
+    fun syncMercadoPagoMovements() {
+        viewModelScope.launch {
+            _isSyncingMercadoPago.value = true
+            when (val result = syncMercadoPagoMovementsUseCase()) {
+                is DomainResult.Success -> {
+                    val sync = result.data
+                    _message.value = when {
+                        sync.fetched == 0 -> "No hay movimientos nuevos de Mercado Pago"
+                        else -> "Mercado Pago: ${sync.inserted} nuevos, ${sync.updated} actualizados"
+                    }
+                }
+                is DomainResult.Error -> _error.value = result.message
+            }
+            _isSyncingMercadoPago.value = false
         }
     }
 

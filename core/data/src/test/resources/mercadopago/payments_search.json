@@ -1,0 +1,50 @@
+{
+  "paging": {
+    "total": 2,
+    "limit": 50,
+    "offset": 0
+  },
+  "results": [
+    {
+      "id": 20359978,
+      "date_created": "2024-06-15T10:04:58.000-03:00",
+      "operation_type": "regular_payment",
+      "payment_method_id": "account_money",
+      "status": "approved",
+      "currency_id": "ARS",
+      "description": "Carrefour",
+      "transaction_amount": 2350.0,
+      "payer": {
+        "email": "test@example.com"
+      },
+      "fee_details": [
+        {
+          "amount": 35.25
+        }
+      ],
+      "transaction_details": {
+        "net_received_amount": 2314.75
+      }
+    },
+    {
+      "id": 20359979,
+      "date_created": "2024-06-14T18:30:00.000-03:00",
+      "operation_type": "money_transfer",
+      "payment_method_id": "account_money",
+      "status": "rejected",
+      "currency_id": "ARS",
+      "description": "Transferencia rechazada",
+      "transaction_amount": 500.0
+    },
+    {
+      "id": 20359980,
+      "date_created": "2024-06-13T09:15:00.000-03:00",
+      "operation_type": "money_transfer",
+      "payment_method_id": "account_money",
+      "status": "approved",
+      "currency_id": "ARS",
+      "statement_descriptor": "Ingreso de Juan",
+      "transaction_amount": 15000.0
+    }
+  ]
+}

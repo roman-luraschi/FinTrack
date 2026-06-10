@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.fintrack.core.database.MIGRATION_1_2
+import com.fintrack.core.database.MIGRATION_2_3
+import com.fintrack.core.database.MIGRATION_3_4
 import com.fintrack.core.database.seed.DatabaseSeedData
 import dagger.Module
 import dagger.Provides
@@ -26,7 +28,7 @@ object DatabaseModule {
             FinTrackDatabase::class.java,
             "fintrack.db",
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .addCallback(SeedCallback())
             .build()
 
@@ -58,6 +60,13 @@ object DatabaseModule {
 private class SeedCallback : RoomDatabase.Callback() {
     override fun onCreate(db: SupportSQLiteDatabase) {
         super.onCreate(db)
+        db.execSQL(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS index_transactions_source_externalId_active
+            ON transactions (source, externalId)
+            WHERE externalId IS NOT NULL AND deletedAt IS NULL
+            """.trimIndent(),
+        )
         // Room runs onCreate before returning; use direct SQL for seed on first creation
         val now = Instant.now().toEpochMilli()
 

@@ -30,7 +30,7 @@ import com.fintrack.core.database.entity.TransactionProvenanceEntity
         TransactionChangeEntity::class,
         TransactionProvenanceEntity::class,
     ],
-    version = 2,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(FinTrackTypeConverters::class)

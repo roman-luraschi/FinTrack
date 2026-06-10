@@ -50,7 +50,10 @@ class TransactionDedupService @Inject constructor(
             val existingEntity = transactionDao.findByExternalIdAndSource(externalId, draft.source)
             if (existingEntity != null) {
                 val existing = existingEntity.toDomain()
-                if (existing.status == TransactionStatus.CONFIRMED) {
+                if (
+                    existing.status == TransactionStatus.CONFIRMED ||
+                    existing.status == TransactionStatus.DUPLICATE_CANDIDATE
+                ) {
                     return DedupResolution.Skip
                 }
                 val (transaction, provenance) = draft.toTransactionWithProvenance(

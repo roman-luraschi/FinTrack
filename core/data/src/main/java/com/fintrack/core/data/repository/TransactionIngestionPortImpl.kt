@@ -10,6 +10,7 @@ import com.fintrack.core.domain.model.IngestionBatch
 import com.fintrack.core.domain.model.IngestionBatchStatus
 import com.fintrack.core.domain.model.IngestionRequest
 import com.fintrack.core.domain.model.IngestionResult
+import com.fintrack.core.domain.model.TransactionDraft
 import com.fintrack.core.domain.repository.TransactionIngestionPort
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -57,17 +58,28 @@ class TransactionIngestionPortImpl @Inject constructor(
         var errors = 0
         val duplicateCandidates = mutableListOf<Long>()
         val errorMessages = mutableListOf<String>()
+        val seenInBatch = mutableSetOf<String>()
 
         for (draft in request.drafts) {
+            val batchKey = draft.batchExternalKey()
+            if (batchKey != null && batchKey in seenInBatch) {
+                skipped++
+                continue
+            }
+
             try {
                 when (val resolution = dedupService.resolve(draft, batchId, now)) {
-                    is DedupResolution.Skip -> skipped++
+                    is DedupResolution.Skip -> {
+                        batchKey?.let(seenInBatch::add)
+                        skipped++
+                    }
 
                     is DedupResolution.Update -> {
                         transactionDao.updateWithProvenance(
                             resolution.transaction.toEntity(),
                             resolution.provenance.toEntity(),
                         )
+                        batchKey?.let(seenInBatch::add)
                         updated++
                     }
 
@@ -77,6 +89,7 @@ class TransactionIngestionPortImpl @Inject constructor(
                             resolution.provenance.toEntity(),
                         )
                         duplicateCandidates.add(id)
+                        batchKey?.let(seenInBatch::add)
                         inserted++
                     }
 
@@ -85,12 +98,18 @@ class TransactionIngestionPortImpl @Inject constructor(
                             resolution.transaction.toEntity(),
                             resolution.provenance.toEntity(),
                         )
+                        batchKey?.let(seenInBatch::add)
                         inserted++
                     }
                 }
             } catch (error: Exception) {
-                errors++
-                errorMessages.add(error.message ?: error.javaClass.simpleName)
+                if (isDuplicateExternalIdViolation(error)) {
+                    batchKey?.let(seenInBatch::add)
+                    skipped++
+                } else {
+                    errors++
+                    errorMessages.add(error.message ?: error.javaClass.simpleName)
+                }
             }
         }
 
@@ -123,4 +142,18 @@ class TransactionIngestionPortImpl @Inject constructor(
             duplicateCandidates = duplicateCandidates,
         )
     }
+}
+
+private fun TransactionDraft.batchExternalKey(): String? =
+    externalId?.trim()?.takeIf { it.isNotEmpty() }?.let { "${source}:$it" }
+
+private fun isDuplicateExternalIdViolation(error: Exception): Boolean {
+    var current: Throwable? = error
+    while (current != null) {
+        if (current.message?.contains("UNIQUE constraint failed", ignoreCase = true) == true) {
+            return true
+        }
+        current = current.cause
+    }
+    return false
 }

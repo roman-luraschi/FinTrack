@@ -107,4 +107,16 @@
     <string name="integration_provider_uala">Ualá</string>
     <string name="integration_provider_personal_pay">Personal Pay</string>
     <string name="integration_provider_generic_bank">Otro banco</string>
+    <string name="mercadopago_connection_title">Mercado Pago</string>
+    <string name="mercadopago_connection_connected">Conectado — FinTrack puede sincronizar movimientos desde tu cuenta</string>
+    <string name="mercadopago_connection_disconnected">Sin conectar — autorizá FinTrack en Mercado Pago para importar movimientos</string>
+    <string name="mercadopago_connection_error">No se pudo conectar Mercado Pago</string>
+    <string name="mercadopago_connection_connect">Conectar Mercado Pago</string>
+    <string name="mercadopago_connection_connecting">Abriendo autorización…</string>
+    <string name="mercadopago_connection_disconnect">Desconectar</string>
+    <string name="mercadopago_connection_privacy">Los tokens OAuth se guardan cifrados en el backend de FinTrack. Las transacciones se almacenan solo en tu dispositivo.</string>
+    <string name="mercadopago_connection_success">Mercado Pago conectado</string>
+    <string name="mercadopago_connection_disconnected_message">Mercado Pago desconectado</string>
+    <string name="mercadopago_sync_now">Sincronizar movimientos</string>
+    <string name="mercadopago_sync_in_progress">Sincronizando…</string>
 </resources>

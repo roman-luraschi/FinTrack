@@ -77,6 +77,7 @@ fun SettingsScreen(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.refreshBiometricAvailability()
             viewModel.refreshNotificationAccess()
+            viewModel.ensureBackendReady()
         }
     }
 
@@ -152,6 +153,16 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+            item {
+                MercadoPagoConnectionRow(
+                    connection = uiState.mercadoPagoConnection,
+                    isConnecting = uiState.isConnectingMercadoPago,
+                    isSyncing = uiState.isSyncingMercadoPago,
+                    onConnectClick = viewModel::connectMercadoPago,
+                    onDisconnectClick = viewModel::disconnectMercadoPago,
+                    onSyncClick = viewModel::syncMercadoPagoMovements,
+                )
             }
             item {
                 Row(
